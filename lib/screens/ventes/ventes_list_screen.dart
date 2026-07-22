@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/vente_provider.dart';
 import '../../widgets/loading_widget.dart';
 import 'nouvelle_vente_screen.dart';
 import 'vente_detail_screen.dart';
 
 class VentesListScreen extends StatefulWidget {
-  const VentesListScreen({super.key});
+  final VoidCallback? onMenuTap;
+  const VentesListScreen({super.key, this.onMenuTap});
 
   @override
   State<VentesListScreen> createState() => _VentesListScreenState();
@@ -46,6 +48,10 @@ class _VentesListScreenState extends State<VentesListScreen> {
     }).toList();
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.menu), onPressed: widget.onMenuTap),
+        title: const Text('Historique des ventes'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -125,7 +131,7 @@ class _VentesListScreenState extends State<VentesListScreen> {
                                     children: [
                                       Text('Vente #${vente.numero}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary)),
                                       const SizedBox(height: 4),
-                                      Text('${vente.montantNet} CFA', style: TextStyle(fontSize: 13, color: AppTheme.primaryColor, fontWeight: FontWeight.w500)),
+                                      Text('${vente.montantNet} ${AppCurrency.symbol}', style: TextStyle(fontSize: 13, color: AppTheme.primaryColor, fontWeight: FontWeight.w500)),
                                     ],
                                   ),
                                 ),

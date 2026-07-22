@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/lot_provider.dart';
 import '../../models/lot.dart';
 import '../../widgets/loading_widget.dart';
@@ -255,7 +256,7 @@ class _LotCard extends StatelessWidget {
                   const SizedBox(width: 20),
                   _statItem('Initiale', lot.quantiteInitiale.toStringAsFixed(0)),
                   const Spacer(),
-                  Text('${lot.prixAchat.toStringAsFixed(0)} CFA', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+                  Text('${lot.prixAchat.toStringAsFixed(0)} ${AppCurrency.symbol}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
                 ],
               ),
               if (lot.quantite > 0) ...[

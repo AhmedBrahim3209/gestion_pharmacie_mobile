@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../models/achat.dart';
 
 class AchatDetailScreen extends StatelessWidget {
@@ -34,15 +34,15 @@ class AchatDetailScreen extends StatelessWidget {
           ...achat.lignes.map((l) => Card(
             child: ListTile(
               title: Text(l.medicamentNom),
-              subtitle: Text('${l.quantite} x ${l.prixUnitaire} CFA'),
-              trailing: Text('${l.sousTotal} CFA', style: const TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: Text('${l.quantite} x ${l.prixUnitaire} ${AppCurrency.symbol}'),
+              trailing: Text('${l.sousTotal} ${AppCurrency.symbol}', style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           )),
           const Divider(),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: _row('Total', '${achat.montantTotal} CFA', isBold: true),
+              child: _row('Total', '${achat.montantTotal} ${AppCurrency.symbol}', isBold: true),
             ),
           ),
         ],

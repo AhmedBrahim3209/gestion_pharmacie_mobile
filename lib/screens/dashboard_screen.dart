@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../config/app_theme.dart';
+import '../config/currency_helper.dart';
 import '../providers/dashboard_provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_service.dart';
@@ -15,7 +16,8 @@ import 'abonnements/abonnements_list_screen.dart';
 import 'pharmacies/pharmacies_list_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback? onMenuTap;
+  const DashboardScreen({super.key, this.onMenuTap});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -70,7 +72,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final user = context.watch<AuthProvider>().user;
     final dashboard = context.watch<DashboardProvider>();
 
-    return RefreshIndicator(
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.menu), onPressed: widget.onMenuTap),
+        title: Text(user?.isSuperAdmin == true ? 'Dashboard' : 'Dashboard'),
+        actions: [
+          IconButton(icon: const Icon(Icons.notifications_outlined), onPressed: () {}),
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+            child: Text(user?.username[0].toUpperCase() ?? '?', style: const TextStyle(fontSize: 12, color: AppTheme.primaryColor)),
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
       onRefresh: _loadAll,
       child: ListView(
         padding: const EdgeInsets.all(16),
@@ -107,6 +122,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ..._buildDashboardGrid(context, dashboard.data, user),
         ],
       ),
+    ),
     );
   }
 
@@ -124,8 +140,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisSpacing: 12,
           childAspectRatio: 1.6,
           children: [
-            StatCard(title: 'CA aujourd\'hui', value: '${data.caAujourdhui} CFA', icon: Icons.today, color: AppTheme.accentColor),
-            StatCard(title: 'CA du mois', value: '${data.caMois} CFA', icon: Icons.monetization_on, color: AppTheme.successColor),
+            StatCard(title: 'CA aujourd\'hui', value: '${data.caAujourdhui} ${AppCurrency.symbol}', icon: Icons.today, color: AppTheme.accentColor),
+            StatCard(title: 'CA du mois', value: '${data.caMois} ${AppCurrency.symbol}', icon: Icons.monetization_on, color: AppTheme.successColor),
             StatCard(title: 'Ventes aujourd\'hui', value: '${data.ventesAujourdhui}', icon: Icons.shopping_cart, color: AppTheme.warningColor),
             StatCard(title: 'Stock faible', value: '${data.stockFaible}', icon: Icons.warning_amber, color: AppTheme.errorColor),
             StatCard(title: 'Expire bientôt', value: '${data.expiresBientot}', icon: Icons.calendar_month, color: Colors.purple),
@@ -203,7 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             StatCard(title: 'Pharmacies', value: '$_totalPharmacies', icon: Icons.local_pharmacy, color: AppTheme.primaryColor),
             StatCard(title: 'Employés', value: '$_totalEmployes', icon: Icons.badge, color: Colors.purple),
             StatCard(title: 'Abonnements actifs', value: '$_abonnementsActifs', icon: Icons.subscriptions, color: AppTheme.successColor),
-            StatCard(title: 'CA total mois', value: '${data?.caMois ?? 0} CFA', icon: Icons.monetization_on, color: AppTheme.accentColor),
+            StatCard(title: 'CA total mois', value: '${data?.caMois ?? 0} ${AppCurrency.symbol}', icon: Icons.monetization_on, color: AppTheme.accentColor),
           ],
         ),
         const SizedBox(height: 16),

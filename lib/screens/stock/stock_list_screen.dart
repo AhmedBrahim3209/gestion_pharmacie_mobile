@@ -6,7 +6,8 @@ import '../../widgets/loading_widget.dart';
 import 'ajuster_stock_screen.dart';
 
 class StockListScreen extends StatefulWidget {
-  const StockListScreen({super.key});
+  final VoidCallback? onMenuTap;
+  const StockListScreen({super.key, this.onMenuTap});
 
   @override
   State<StockListScreen> createState() => _StockListScreenState();
@@ -26,6 +27,10 @@ class _StockListScreenState extends State<StockListScreen> {
     final provider = context.watch<StockProvider>();
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.menu), onPressed: widget.onMenuTap),
+        title: const Text('Stock'),
+      ),
       body: provider.isLoading
           ? const LoadingWidget()
           : provider.stockItems.isEmpty

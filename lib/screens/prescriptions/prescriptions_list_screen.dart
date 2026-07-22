@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../models/prescription.dart';
 import '../../providers/prescription_provider.dart';
+import '../../services/api_service.dart';
 import '../../services/pdf_service.dart';
 import '../../widgets/loading_widget.dart';
 import 'prescription_form_screen.dart';
@@ -136,14 +138,16 @@ class _PrescriptionsListScreenState extends State<PrescriptionsListScreen> {
     );
   }
 
-  void _showDetail(BuildContext context, dynamic p) {
+  void _showDetail(BuildContext context, Prescription p) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
@@ -179,9 +183,16 @@ class _PrescriptionsListScreenState extends State<PrescriptionsListScreen> {
                   label: const Text('PDF', style: TextStyle(color: AppTheme.primaryColor)),
                   onPressed: () async {
                     Navigator.pop(ctx);
-                    final pdf = await PdfService.generatePrescription(p);
+                    Prescription presc = p;
+                    if (p.lignes.isEmpty) {
+                      try {
+                        final detail = await ApiService().getPrescription(p.id);
+                        presc = Prescription.fromJson(detail);
+                      } catch (_) {}
+                    }
+                    final pdf = await PdfService.generatePrescription(presc);
                     if (context.mounted) {
-                      await PdfService.saveAndOpen(pdf, 'prescription_${p.numero}.pdf');
+                      await PdfService.saveAndOpen(pdf, 'prescription_${presc.numero}.pdf');
                     }
                   },
                 ),
@@ -197,6 +208,7 @@ class _PrescriptionsListScreenState extends State<PrescriptionsListScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

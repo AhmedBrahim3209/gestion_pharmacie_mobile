@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'config/app_theme.dart';
 import 'services/api_service.dart';
@@ -19,7 +20,6 @@ import 'providers/chat_provider.dart';
 import 'providers/rapport_provider.dart';
 import 'providers/utilisateur_provider.dart';
 import 'providers/localisation_provider.dart';
-import 'providers/lot_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -53,13 +53,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => RapportProvider()),
         ChangeNotifierProvider(create: (_) => UtilisateurProvider()),
         ChangeNotifierProvider(create: (_) => LocalisationProvider()),
-        ChangeNotifierProvider(create: (_) => LotProvider()),
       ],
       child: Consumer<LocalisationProvider>(
         builder: (context, loc, _) => MaterialApp(
           title: 'Gestion Pharmacie',
           debugShowCheckedModeBanner: false,
           locale: loc.locale,
+          supportedLocales: const [Locale('fr'), Locale('en'), Locale('ar')],
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           home: Consumer<AuthProvider>(

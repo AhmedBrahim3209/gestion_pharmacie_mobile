@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
+import '../../models/abonnement.dart';
 import '../../providers/abonnement_provider.dart';
 import '../../providers/pharmacie_provider.dart';
 import '../../providers/auth_provider.dart';
@@ -88,17 +90,26 @@ class _AbonnementsListScreenState extends State<AbonnementsListScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_pharmacieId == null || _planCtrl.text.isEmpty) return;
-              context.read<AbonnementProvider>().createAbonnement({
+              final aboProv = context.read<AbonnementProvider>();
+              final ok = await aboProv.createAbonnement({
                 'pharmacie': _pharmacieId,
                 'plan': _planCtrl.text,
                 'montant': double.tryParse(_montantCtrl.text),
               });
-              _pharmacieId = null;
-              _planCtrl.clear();
-              _montantCtrl.clear();
-              Navigator.pop(ctx);
+              if (!ctx.mounted) return;
+              if (ok) {
+                _pharmacieId = null;
+                _planCtrl.clear();
+                _montantCtrl.clear();
+                Navigator.pop(ctx);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                  content: Text(aboProv.error ?? 'Erreur'),
+                  backgroundColor: AppTheme.errorColor,
+                ));
+              }
             },
             child: const Text('Ajouter'),
           ),
@@ -107,54 +118,57 @@ class _AbonnementsListScreenState extends State<AbonnementsListScreen> {
     );
   }
 
-  void _showDetail(BuildContext context, dynamic a) {
+  void _showDetail(BuildContext context, Abonnement a) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 16),
-            Text(a.pharmacieNom ?? 'Abonnement #${a.id}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-            const SizedBox(height: 16),
-            _row('Plan', a.plan),
-            const Divider(height: 1),
-            _row('Montant', a.montant != null ? '${a.montant} CFA' : 'N/A'),
-            const Divider(height: 1),
-            _row('Date début', a.dateDebut ?? 'N/A'),
-            const Divider(height: 1),
-            _row('Date fin', a.dateFin ?? 'N/A'),
-            const Divider(height: 1),
-            _row('Statut', _statutLabel(a.statut)),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (a.statut == 'actif')
-                  TextButton.icon(
-                    icon: const Icon(Icons.pause_circle, color: AppTheme.warningColor),
-                    label: const Text('Suspendre', style: TextStyle(color: AppTheme.warningColor)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.read<AbonnementProvider>().suspendreAbonnement(a.id);
-                    },
-                  )
-                else
-                  TextButton.icon(
-                    icon: const Icon(Icons.play_circle, color: AppTheme.successColor),
-                    label: const Text('Activer', style: TextStyle(color: AppTheme.successColor)),
-                    onPressed: () {
-                      Navigator.pop(ctx);
-                      context.read<AbonnementProvider>().activerAbonnement(a.id);
-                    },
-                  ),
-              ],
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Text(a.pharmacieNom ?? 'Abonnement #${a.id}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+              const SizedBox(height: 16),
+              _row('Plan', a.plan),
+              const Divider(height: 1),
+              _row('Montant', a.montant != null ? '${a.montant} ${AppCurrency.symbol}' : 'N/A'),
+              const Divider(height: 1),
+              _row('Date début', a.dateDebut ?? 'N/A'),
+              const Divider(height: 1),
+              _row('Date fin', a.dateFin ?? 'N/A'),
+              const Divider(height: 1),
+              _row('Statut', _statutLabel(a.statut)),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (a.statut == 'actif')
+                    TextButton.icon(
+                      icon: const Icon(Icons.pause_circle, color: AppTheme.warningColor),
+                      label: const Text('Suspendre', style: TextStyle(color: AppTheme.warningColor)),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.read<AbonnementProvider>().suspendreAbonnement(a.id);
+                      },
+                    )
+                  else
+                    TextButton.icon(
+                      icon: const Icon(Icons.play_circle, color: AppTheme.successColor),
+                      label: const Text('Activer', style: TextStyle(color: AppTheme.successColor)),
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        context.read<AbonnementProvider>().activerAbonnement(a.id);
+                      },
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -178,6 +192,7 @@ class _AbonnementsListScreenState extends State<AbonnementsListScreen> {
     }).toList();
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Abonnements')),
       body: provider.isLoading
           ? const LoadingWidget()
           : abonnements.isEmpty

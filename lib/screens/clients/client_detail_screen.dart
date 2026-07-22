@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../models/client.dart';
 import '../../providers/client_provider.dart';
 import '../../widgets/loading_widget.dart';
@@ -64,9 +65,9 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   _infoRow(Icons.home, widget.client.adresse ?? 'N/A'),
                   const SizedBox(height: 8),
                   if (widget.client.sexe != null) _infoRow(Icons.person, widget.client.sexe!),
-                  if (widget.client.dateNaissance != null && widget.client.dateNaissance is String) ...[
+                  if (widget.client.dateNaissance != null) ...[
                     const SizedBox(height: 8),
-                    _infoRow(Icons.cake, widget.client.dateNaissance as String),
+                    _infoRow(Icons.cake, '${widget.client.dateNaissance!.day}/${widget.client.dateNaissance!.month}/${widget.client.dateNaissance!.year}'),
                   ],
                 ],
               ),
@@ -95,7 +96,7 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
                   child: const Icon(Icons.receipt, color: AppTheme.primaryColor, size: 20),
                 ),
                 title: Text('Vente #${v.numero}', style: const TextStyle(fontWeight: FontWeight.w500)),
-                subtitle: Text('${v.montantNet} CFA  •  ${v.dateVente}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                subtitle: Text('${v.montantNet} ${AppCurrency.symbol}  •  ${v.dateVente}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
                 trailing: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(

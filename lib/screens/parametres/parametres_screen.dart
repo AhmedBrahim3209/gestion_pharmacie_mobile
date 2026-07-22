@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/pharmacie_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/localisation_provider.dart';
@@ -61,7 +62,7 @@ class _ParametresScreenState extends State<ParametresScreen> {
       _emailCtrl.text = p.email ?? '';
       _messageCtrl.text = p.messageTicket ?? '';
       _langue = p.langue ?? 'fr';
-      _devise = p.devise ?? 'CFA';
+      _devise = p.devise ?? AppCurrency.symbol;
     }
   }
 
@@ -75,14 +76,29 @@ class _ParametresScreenState extends State<ParametresScreen> {
     }
   }
 
+  bool _fieldsInitialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_fieldsInitialized) {
+      final pp = context.read<PharmacieProvider>();
+      if (pp.myPharmacie != null) {
+        _initPharmacyFields(pp);
+        _fieldsInitialized = true;
+      }
+      if (pp.platformSettings != null) {
+        _initPlatformFields(pp);
+        _fieldsInitialized = true;
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pp = context.watch<PharmacieProvider>();
     final auth = context.watch<AuthProvider>();
     final loc = context.watch<LocalisationProvider>();
-
-    if (pp.myPharmacie != null && _nomCtrl.text.isEmpty) _initPharmacyFields(pp);
-    if (pp.platformSettings != null && _plateformeNomCtrl.text.isEmpty) _initPlatformFields(pp);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Paramètres')),
@@ -124,7 +140,7 @@ class _ParametresScreenState extends State<ParametresScreen> {
                         DropdownMenuItem(value: 'EUR', child: Text('Euro (€)')),
                         DropdownMenuItem(value: 'USD', child: Text('Dollar (\$)')),
                       ],
-                      onChanged: (v) => setState(() => _devise = v ?? 'CFA'),
+                      onChanged: (v) => setState(() => _devise = v ?? AppCurrency.symbol),
                     ),
                     const SizedBox(height: 20),
                     SizedBox(

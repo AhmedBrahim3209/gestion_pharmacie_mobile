@@ -1,3 +1,10 @@
+double? _toDouble(dynamic v) {
+  if (v == null) return null;
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v);
+  return null;
+}
+
 class Stock {
   final int id;
   final int medicamentId;
@@ -22,8 +29,8 @@ class Stock {
       id: json['id'],
       medicamentId: json['medicament'],
       medicamentNom: json['medicament_nom'] ?? '',
-      quantite: (json['quantite'] as num).toDouble(),
-      seuilMin: (json['seuil_min'] as num).toDouble(),
+      quantite: _toDouble(json['quantite']) ?? 0,
+      seuilMin: _toDouble(json['seuil_min']) ?? 0,
       numeroLot: json['numero_lot'],
       derniereMaj: json['derniere_maj'],
     );
@@ -58,9 +65,9 @@ class MouvementStock {
       id: json['id'],
       stockId: json['stock'],
       typeMouvement: json['type_mouvement'],
-      quantite: (json['quantite'] as num).toDouble(),
-      quantiteAvant: (json['quantite_avant'] as num?)?.toDouble(),
-      quantiteApres: (json['quantite_apres'] as num?)?.toDouble(),
+      quantite: _toDouble(json['quantite']) ?? 0,
+      quantiteAvant: _toDouble(json['quantite_avant']),
+      quantiteApres: _toDouble(json['quantite_apres']),
       motif: json['motif'],
       date: json['date'],
       utilisateurNom: json['utilisateur_nom'],

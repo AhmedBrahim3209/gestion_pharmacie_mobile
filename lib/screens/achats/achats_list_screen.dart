@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/achat_provider.dart';
 import '../../widgets/loading_widget.dart';
 import 'achat_detail_screen.dart';
@@ -73,7 +74,7 @@ class _AchatsListScreenState extends State<AchatsListScreen> {
                                     children: [
                                       Text('Achat #${achat.numero}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary)),
                                       const SizedBox(height: 4),
-                                      Text('${achat.montantTotal} CFA  •  ${achat.fournisseurNom ?? "N/A"}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                                      Text('${achat.montantTotal} ${AppCurrency.symbol}  •  ${achat.fournisseurNom ?? "N/A"}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                                     ],
                                   ),
                                 ),

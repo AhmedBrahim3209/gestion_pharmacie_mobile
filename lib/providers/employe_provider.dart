@@ -27,8 +27,10 @@ class EmployeProvider extends ChangeNotifier {
 
   Future<bool> createEmploye(Map<String, dynamic> data) async {
     try {
-      await _api.createEmploye(data);
-      await loadEmployes();
+      final result = await _api.createEmploye(data);
+      _employes.add(Employe.fromJson(result));
+      notifyListeners();
+      loadEmployes();
       return true;
     } catch (e) {
       _error = e.toString();

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/lot_provider.dart';
 import '../../models/lot.dart';
 import '../../widgets/loading_widget.dart';
@@ -193,9 +194,9 @@ class _LotDetailScreenState extends State<LotDetailScreen> {
               _infoRow(Icons.business, 'Fournisseur', lot.fournisseurNom!),
               const Divider(height: 1),
             ],
-            _infoRow(Icons.monetization_on, 'Prix achat', '${lot.prixAchat.toStringAsFixed(0)} CFA'),
+            _infoRow(Icons.monetization_on, 'Prix achat', '${lot.prixAchat.toStringAsFixed(0)} ${AppCurrency.symbol}'),
             const Divider(height: 1),
-            _infoRow(Icons.monetization_on, 'Prix vente', '${lot.prixVente.toStringAsFixed(0)} CFA'),
+            _infoRow(Icons.monetization_on, 'Prix vente', '${lot.prixVente.toStringAsFixed(0)} ${AppCurrency.symbol}'),
             const Divider(height: 1),
             _infoRow(Icons.circle, 'Statut', lot.statut, color: lot.statutColor),
             const Divider(height: 1),

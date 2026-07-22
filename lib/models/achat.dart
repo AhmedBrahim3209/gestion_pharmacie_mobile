@@ -23,6 +23,13 @@ class Achat {
     this.lignes = const [],
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory Achat.fromJson(Map<String, dynamic> json) {
     return Achat(
       id: json['id'],
@@ -31,7 +38,7 @@ class Achat {
       fournisseurNom: json['fournisseur_nom'],
       dateAchat: json['date_achat'] ?? '',
       statut: json['statut'] ?? 'en_attente',
-      montantTotal: (json['montant_total'] as num?)?.toDouble() ?? 0,
+      montantTotal: _toDouble(json['montant_total']) ?? 0,
       notes: json['notes'],
       enregistreParNom: json['enregistre_par_nom'],
       lignes: (json['lignes'] as List?)?.map((e) => LigneAchat.fromJson(e)).toList() ?? [],
@@ -56,14 +63,21 @@ class LigneAchat {
     required this.sousTotal,
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory LigneAchat.fromJson(Map<String, dynamic> json) {
     return LigneAchat(
       id: json['id'],
       medicamentId: json['medicament'],
       medicamentNom: json['medicament_nom'] ?? '',
-      quantite: (json['quantite'] as num).toDouble(),
-      prixUnitaire: (json['prix_unitaire'] as num).toDouble(),
-      sousTotal: (json['sous_total'] as num).toDouble(),
+      quantite: _toDouble(json['quantite']) ?? 0,
+      prixUnitaire: _toDouble(json['prix_unitaire']) ?? 0,
+      sousTotal: _toDouble(json['sous_total']) ?? 0,
     );
   }
 }

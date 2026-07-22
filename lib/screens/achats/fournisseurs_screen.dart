@@ -69,13 +69,14 @@ class _FournisseursScreenState extends State<FournisseursScreen> {
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
-        TextButton(onPressed: () {
+        TextButton(onPressed: () async {
           if (_nomCtrl.text.isNotEmpty) {
             final achatProv = context.read<AchatProvider>();
+            bool ok;
             if (_editing != null) {
-              achatProv.updateFournisseur(_editing!.id, _editing!.toJson());
+              ok = await achatProv.updateFournisseur(_editing!.id, _editing!.toJson());
             } else {
-              achatProv.createFournisseur({
+              ok = await achatProv.createFournisseur({
                 'nom': _nomCtrl.text.trim(),
                 'contact': _contactCtrl.text.trim(),
                 'telephone': _telCtrl.text.trim(),
@@ -83,9 +84,17 @@ class _FournisseursScreenState extends State<FournisseursScreen> {
                 'adresse': _adresseCtrl.text.trim(),
               });
             }
-            _nomCtrl.clear(); _contactCtrl.clear(); _telCtrl.clear(); _emailCtrl.clear(); _adresseCtrl.clear();
-            _editing = null;
-            Navigator.pop(ctx);
+            if (!ctx.mounted) return;
+            if (ok) {
+              _nomCtrl.clear(); _contactCtrl.clear(); _telCtrl.clear(); _emailCtrl.clear(); _adresseCtrl.clear();
+              _editing = null;
+              Navigator.pop(ctx);
+            } else {
+              ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                content: Text(achatProv.error ?? 'Erreur'),
+                backgroundColor: AppTheme.errorColor,
+              ));
+            }
           }
         }, child: Text(f != null ? 'Modifier' : 'Ajouter')),
       ],

@@ -168,13 +168,13 @@ class ApiService {
   }
 
   // Auth
-  Future<Map<String, dynamic>> getMe() async => (await _get('/auth/me/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getMe() async => (await get('/auth/me/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> updateMe(Map<String, dynamic> data) async => (await patch('/auth/me/', data: data)) as Map<String, dynamic>;
   Future<dynamic> changePassword(Map<String, dynamic> data) => post('/auth/change-password/', data: data);
 
   // Medicaments
   Future<List<dynamic>> getMedicaments() async => (await _get('/medicaments/')) as List<dynamic>;
-  Future<Map<String, dynamic>> getMedicament(int id) async => (await _get('/medicaments/$id/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getMedicament(int id) async => (await get('/medicaments/$id/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> createMedicament(Map<String, dynamic> data) async => (await post('/medicaments/', data: data)) as Map<String, dynamic>;
   Future<Map<String, dynamic>> updateMedicament(int id, Map<String, dynamic> data) async => (await patch('/medicaments/$id/', data: data)) as Map<String, dynamic>;
   Future<void> deleteMedicament(int id) => delete('/medicaments/$id/');
@@ -187,39 +187,37 @@ class ApiService {
 
   // Stock
   Future<List<dynamic>> getStock() async => (await _get('/stock/')) as List<dynamic>;
-  Future<Map<String, dynamic>> getStockItem(int id) async => (await _get('/stock/$id/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getStockItem(int id) async => (await get('/stock/$id/')) as Map<String, dynamic>;
   Future<List<dynamic>> getLowStock() async => (await _get('/stock/faibles/')) as List<dynamic>;
   Future<List<dynamic>> getOutOfStock() async => (await _get('/stock/rupture/')) as List<dynamic>;
   Future<Map<String, dynamic>> adjustStock(int id, Map<String, dynamic> data) async => (await post('/stock/$id/ajuster/', data: data)) as Map<String, dynamic>;
   Future<List<dynamic>> getMouvements() async => (await _get('/stock/mouvements/')) as List<dynamic>;
 
-  // Lots
+  // Lots (via Stock - le backend utilise le modèle Stock)
   Future<List<dynamic>> getLots({int? medicamentId, bool seulementActifs = true}) async {
-    var path = '/stock/lots/';
-    final params = <String>[];
-    if (medicamentId != null) params.add('medicament=$medicamentId');
-    if (seulementActifs) params.add('actifs=true');
-    if (params.isNotEmpty) path += '?${params.join('&')}';
-    return (await _get(path)) as List<dynamic>;
+    if (medicamentId != null) {
+      return (await _get('/stock/?medicament=$medicamentId')) as List<dynamic>;
+    }
+    return (await _get('/stock/')) as List<dynamic>;
   }
-  Future<Map<String, dynamic>> getLotDetail(int id) async => (await _get('/stock/lots/$id/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getLotDetail(int id) async => (await get('/stock/$id/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> createLot(Map<String, dynamic> data) async => (await post('/stock/lots/', data: data)) as Map<String, dynamic>;
-  Future<Map<String, dynamic>> updateLot(int id, Map<String, dynamic> data) async => (await patch('/stock/lots/$id/', data: data)) as Map<String, dynamic>;
-  Future<void> deleteLot(int id) => delete('/stock/lots/$id/');
-  Future<List<dynamic>> getMouvementsLot(int lotId) async => (await _get('/stock/lots/$lotId/mouvements/')) as List<dynamic>;
-  Future<Map<String, dynamic>> ajustementLot(int lotId, Map<String, dynamic> data) async => (await post('/stock/lots/$lotId/ajuster/', data: data)) as Map<String, dynamic>;
-  Future<List<dynamic>> getLotsExpirant({int jours = 90}) async => (await _get('/stock/lots/expirant/?jours=$jours')) as List<dynamic>;
-  Future<List<dynamic>> getLotsPourVente(int medicamentId, double quantite) async => (await _get('/stock/lots/pour-vente/?medicament=$medicamentId&quantite=$quantite')) as List<dynamic>;
+  Future<Map<String, dynamic>> updateLot(int id, Map<String, dynamic> data) async => (await patch('/stock/$id/', data: data)) as Map<String, dynamic>;
+  Future<void> deleteLot(int id) => delete('/stock/$id/');
+  Future<List<dynamic>> getMouvementsLot(int lotId) async => (await _get('/stock/mouvements/')) as List<dynamic>;
+  Future<Map<String, dynamic>> ajustementLot(int lotId, Map<String, dynamic> data) async => (await post('/stock/$lotId/ajuster/', data: data)) as Map<String, dynamic>;
+  Future<List<dynamic>> getLotsExpirant({int jours = 90}) async => (await _get('/medicaments/expire-bientot/')) as List<dynamic>;
+  Future<List<dynamic>> getLotsPourVente(int medicamentId, double quantite) async => (await _get('/stock/')) as List<dynamic>;
 
   // Ventes
   Future<List<dynamic>> getVentes() async => (await _get('/ventes/')) as List<dynamic>;
-  Future<Map<String, dynamic>> getVente(int id) async => (await _get('/ventes/$id/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getVente(int id) async => (await get('/ventes/$id/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> createVente(Map<String, dynamic> data) async => (await post('/ventes/', data: data)) as Map<String, dynamic>;
   Future<Map<String, dynamic>> getVentesStats() async => (await _get('/ventes/statistiques/')) as Map<String, dynamic>;
 
   // Achats
   Future<List<dynamic>> getAchats() async => (await _get('/achats/')) as List<dynamic>;
-  Future<Map<String, dynamic>> getAchat(int id) async => (await _get('/achats/$id/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getAchat(int id) async => (await get('/achats/$id/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> createAchat(Map<String, dynamic> data) async => (await post('/achats/', data: data)) as Map<String, dynamic>;
 
   // Fournisseurs
@@ -246,7 +244,7 @@ class ApiService {
 
   // Prescriptions (via clients app)
   Future<List<dynamic>> getPrescriptions() async => (await _get('/clients/prescriptions/')) as List<dynamic>;
-  Future<Map<String, dynamic>> getPrescription(int id) async => (await _get('/clients/prescriptions/$id/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getPrescription(int id) async => (await get('/clients/prescriptions/$id/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> createPrescription(Map<String, dynamic> data) async => (await post('/clients/prescriptions/', data: data)) as Map<String, dynamic>;
   Future<Map<String, dynamic>> updatePrescription(int id, Map<String, dynamic> data) async => (await patch('/clients/prescriptions/$id/', data: data)) as Map<String, dynamic>;
   Future<void> deletePrescription(int id) => delete('/clients/prescriptions/$id/');
@@ -304,13 +302,16 @@ class ApiService {
   Future<Map<String, dynamic>> sendChatMessage(String message) async => (await post('/auth/chat/', data: {'message': message})) as Map<String, dynamic>;
 
   // Rapports
-  Future<Map<String, dynamic>> getRapportVentes({String? format, String? dateDebut, String? dateFin}) async {
-    var path = '/rapports/ventes/?format=${format ?? 'json'}';
-    if (dateDebut != null) path += '&date_debut=$dateDebut';
-    if (dateFin != null) path += '&date_fin=$dateFin';
+  Future<Map<String, dynamic>> getRapportVentes({String? dateDebut, String? dateFin}) async {
+    var path = '/ventes/statistiques/';
+    if (dateDebut != null || dateFin != null) {
+      path += '?';
+      if (dateDebut != null) path += 'date_debut=$dateDebut';
+      if (dateDebut != null && dateFin != null) path += '&';
+      if (dateFin != null) path += 'date_fin=$dateFin';
+    }
     return (await get(path)) as Map<String, dynamic>;
   }
-  Future<dynamic> getRapportStock() async => (await get('/rapports/stock/'));
   Future<List<dynamic>> getEvenementsSuperAdmin() async => (await _get('/rapports/evenements/')) as List<dynamic>;
 
   // Vente stats with params

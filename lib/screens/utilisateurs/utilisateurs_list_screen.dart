@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/utilisateur_provider.dart';
 import '../../widgets/loading_widget.dart';
 
@@ -85,19 +86,33 @@ class _UtilisateursListScreenState extends State<UtilisateursListScreen> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (_usernameCtrl.text.isEmpty || _passwordCtrl.text.isEmpty) return;
-                context.read<UtilisateurProvider>().createUtilisateur({
+                final authProv = context.read<AuthProvider>();
+                final data = <String, dynamic>{
                   'username': _usernameCtrl.text.trim(),
                   'email': _emailCtrl.text.trim(),
                   'password': _passwordCtrl.text,
                   'role': _role,
-                });
-                _usernameCtrl.clear();
-                _emailCtrl.clear();
-                _passwordCtrl.clear();
-                _role = 'employe';
-                Navigator.pop(ctx);
+                };
+                if (_role != 'super_admin' && authProv.user?.pharmacieId != null) {
+                  data['pharmacie'] = authProv.user!.pharmacieId;
+                }
+                final userProv = context.read<UtilisateurProvider>();
+                final ok = await userProv.createUtilisateur(data);
+                if (!ctx.mounted) return;
+                if (ok) {
+                  _usernameCtrl.clear();
+                  _emailCtrl.clear();
+                  _passwordCtrl.clear();
+                  _role = 'employe';
+                  Navigator.pop(ctx);
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text(userProv.error ?? 'Erreur'),
+                    backgroundColor: AppTheme.errorColor,
+                  ));
+                }
               },
               child: const Text('Créer'),
             ),

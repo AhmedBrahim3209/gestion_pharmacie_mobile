@@ -35,20 +35,27 @@ class Lot {
     this.dateModification,
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory Lot.fromJson(Map<String, dynamic> json) {
     return Lot(
       id: json['id'],
       medicamentId: json['medicament'],
       medicamentNom: json['medicament_nom'] ?? '',
       numeroLot: json['numero_lot'] ?? '',
-      quantite: (json['quantite'] as num?)?.toDouble() ?? 0,
-      quantiteInitiale: (json['quantite_initiale'] as num?)?.toDouble() ?? 0,
+      quantite: _toDouble(json['quantite']) ?? 0,
+      quantiteInitiale: _toDouble(json['quantite_initiale']) ?? 0,
       dateFabrication: _parseDate(json['date_fabrication']) ?? DateTime.now(),
       dateExpiration: _parseDate(json['date_expiration']) ?? DateTime.now().add(const Duration(days: 365)),
       fournisseurId: json['fournisseur'],
       fournisseurNom: json['fournisseur_nom'],
-      prixAchat: (json['prix_achat'] as num?)?.toDouble() ?? 0,
-      prixVente: (json['prix_vente'] as num?)?.toDouble() ?? 0,
+      prixAchat: _toDouble(json['prix_achat']) ?? 0,
+      prixVente: _toDouble(json['prix_vente']) ?? 0,
       estActif: json['est_actif'] ?? true,
       dateCreation: _parseDate(json['date_creation']) ?? DateTime.now(),
       dateModification: json['date_modification'] != null ? _parseDate(json['date_modification']) : null,
@@ -107,14 +114,21 @@ class MouvementLot {
     this.achatId,
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory MouvementLot.fromJson(Map<String, dynamic> json) {
     return MouvementLot(
       id: json['id'],
       lotId: json['lot'],
       typeMouvement: json['type_mouvement'],
-      quantite: (json['quantite'] as num).toDouble(),
-      quantiteAvant: (json['quantite_avant'] as num?)?.toDouble() ?? 0,
-      quantiteApres: (json['quantite_apres'] as num?)?.toDouble() ?? 0,
+      quantite: _toDouble(json['quantite']) ?? 0,
+      quantiteAvant: _toDouble(json['quantite_avant']) ?? 0,
+      quantiteApres: _toDouble(json['quantite_apres']) ?? 0,
       motif: json['motif'],
       date: Lot._parseDate(json['date']) ?? DateTime.now(),
       utilisateurNom: json['utilisateur_nom'],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../models/employe.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/employe_provider.dart';
@@ -14,6 +15,9 @@ class EmployesListScreen extends StatefulWidget {
 }
 
 class _EmployesListScreenState extends State<EmployesListScreen> {
+  final _nomCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _telephoneCtrl = TextEditingController();
   final _posteCtrl = TextEditingController();
   final _salaireCtrl = TextEditingController();
   final _numeroCtrl = TextEditingController();
@@ -29,6 +33,9 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
 
   @override
   void dispose() {
+    _nomCtrl.dispose();
+    _emailCtrl.dispose();
+    _telephoneCtrl.dispose();
     _posteCtrl.dispose();
     _salaireCtrl.dispose();
     _numeroCtrl.dispose();
@@ -36,6 +43,13 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
   }
 
   void _ajouter() {
+    _nomCtrl.clear();
+    _emailCtrl.clear();
+    _telephoneCtrl.clear();
+    _posteCtrl.clear();
+    _salaireCtrl.clear();
+    _numeroCtrl.clear();
+    _role = 'employe';
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
@@ -46,7 +60,11 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: _posteCtrl, decoration: InputDecoration(labelText: 'Poste', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
+                TextField(controller: _nomCtrl, decoration: InputDecoration(labelText: 'Nom complet *', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
+                const SizedBox(height: 8),
+                TextField(controller: _emailCtrl, decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
+                const SizedBox(height: 8),
+                TextField(controller: _telephoneCtrl, decoration: InputDecoration(labelText: 'Téléphone', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _role,
@@ -58,6 +76,8 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
                   onChanged: (v) => setDialogState(() => _role = v ?? 'employe'),
                 ),
                 const SizedBox(height: 8),
+                TextField(controller: _posteCtrl, decoration: InputDecoration(labelText: 'Poste', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
+                const SizedBox(height: 8),
                 TextField(controller: _salaireCtrl, decoration: InputDecoration(labelText: 'Salaire', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade50), keyboardType: TextInputType.number),
                 const SizedBox(height: 8),
                 TextField(controller: _numeroCtrl, decoration: InputDecoration(labelText: 'Numéro employé', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade50)),
@@ -67,18 +87,34 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
             ElevatedButton(
-              onPressed: () {
-                context.read<EmployeProvider>().createEmploye({
+              onPressed: () async {
+                if (_nomCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(
+                    content: Text('Nom complet requis'),
+                    backgroundColor: AppTheme.errorColor,
+                  ));
+                  return;
+                }
+                final data = <String, dynamic>{
+                  'nom': _nomCtrl.text.trim(),
+                  'email': _emailCtrl.text.trim(),
+                  'telephone': _telephoneCtrl.text.trim(),
+                  'role': _role,
                   'poste': _posteCtrl.text.trim(),
                   'salaire': double.tryParse(_salaireCtrl.text),
                   'numero_employe': _numeroCtrl.text.trim(),
-                  'role': _role,
-                });
-                _posteCtrl.clear();
-                _salaireCtrl.clear();
-                _numeroCtrl.clear();
-                _role = 'employe';
-                Navigator.pop(ctx);
+                };
+                final empProv = context.read<EmployeProvider>();
+                final ok = await empProv.createEmploye(data);
+                if (!ctx.mounted) return;
+                if (ok) {
+                  Navigator.pop(ctx);
+                } else {
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: Text(empProv.error ?? 'Erreur lors de la création'),
+                    backgroundColor: AppTheme.errorColor,
+                  ));
+                }
               },
               child: const Text('Ajouter'),
             ),
@@ -140,7 +176,7 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
                                   children: [
                                     Text(e.utilisateurNom ?? 'Employé #${e.id}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary)),
                                     const SizedBox(height: 4),
-                                    Text('${e.poste ?? "N/A"}  •  ${e.salaire != null ? "${e.salaire!.toStringAsFixed(0)} CFA" : "N/A"}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                                    Text('${e.poste ?? "N/A"}  •  ${e.salaire != null ? "${e.salaire!.toStringAsFixed(0)} ${AppCurrency.symbol}" : "N/A"}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                                   ],
                                 ),
                               ),

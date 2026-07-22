@@ -62,12 +62,19 @@ class LignePrescription {
     this.duree,
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory LignePrescription.fromJson(Map<String, dynamic> json) {
     return LignePrescription(
       id: json['id'],
       medicamentId: json['medicament'],
       medicamentNom: json['medicament_nom'],
-      quantite: (json['quantite'] as num).toDouble(),
+      quantite: _toDouble(json['quantite']) ?? 0,
       posologie: json['posologie'],
       duree: json['duree'],
     );

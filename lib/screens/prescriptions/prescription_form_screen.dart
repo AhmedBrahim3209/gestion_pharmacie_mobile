@@ -18,6 +18,8 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
   final _medecinCtrl = TextEditingController();
   final _specialiteCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  final _datePrescriptionCtrl = TextEditingController();
+  final _dateValiditeCtrl = TextEditingController();
   DateTime? _datePrescription;
   DateTime? _dateValidite;
   final _lignes = <_LigneOrdonnance>[];
@@ -36,7 +38,23 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
     _medecinCtrl.dispose();
     _specialiteCtrl.dispose();
     _notesCtrl.dispose();
+    _datePrescriptionCtrl.dispose();
+    _dateValiditeCtrl.dispose();
     super.dispose();
+  }
+
+  void _updateDatePrescription(DateTime? d) {
+    setState(() {
+      _datePrescription = d;
+      _datePrescriptionCtrl.text = d != null ? '${d.day}/${d.month}/${d.year}' : '';
+    });
+  }
+
+  void _updateDateValidite(DateTime? d) {
+    setState(() {
+      _dateValidite = d;
+      _dateValiditeCtrl.text = d != null ? '${d.day}/${d.month}/${d.year}' : '';
+    });
   }
 
   void _ajouterLigne() {
@@ -110,10 +128,10 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
                     child: TextFormField(
                       decoration: const InputDecoration(labelText: 'Date prescription', border: OutlineInputBorder(), suffixIcon: Icon(Icons.calendar_month)),
                       readOnly: true,
-                      controller: TextEditingController(text: _datePrescription != null ? '${_datePrescription!.day}/${_datePrescription!.month}/${_datePrescription!.year}' : ''),
+                      controller: _datePrescriptionCtrl,
                       onTap: () async {
                         final d = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2100));
-                        if (d != null) setState(() => _datePrescription = d);
+                        if (d != null) _updateDatePrescription(d);
                       },
                     ),
                   ),
@@ -122,10 +140,10 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
                     child: TextFormField(
                       decoration: const InputDecoration(labelText: 'Validité', border: OutlineInputBorder(), suffixIcon: Icon(Icons.calendar_month)),
                       readOnly: true,
-                      controller: TextEditingController(text: _dateValidite != null ? '${_dateValidite!.day}/${_dateValidite!.month}/${_dateValidite!.year}' : ''),
+                      controller: _dateValiditeCtrl,
                       onTap: () async {
                         final d = await showDatePicker(context: context, firstDate: DateTime(2020), lastDate: DateTime(2100));
-                        if (d != null) setState(() => _dateValidite = d);
+                        if (d != null) _updateDateValidite(d);
                       },
                     ),
                   ),

@@ -61,21 +61,30 @@ class _PharmaciesListScreenState extends State<PharmaciesListScreen> {
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (_nomCtrl.text.isEmpty) return;
-              context.read<PharmacieProvider>().createPharmacie({
+              final phProv = context.read<PharmacieProvider>();
+              final ok = await phProv.createPharmacie({
                 'nom': _nomCtrl.text.trim(),
                 'adresse': _adresseCtrl.text.trim(),
                 'telephone': _telCtrl.text.trim(),
                 'email': _emailCtrl.text.trim(),
                 'numero_licence': _licenceCtrl.text.trim(),
               });
-              _nomCtrl.clear();
-              _adresseCtrl.clear();
-              _telCtrl.clear();
-              _emailCtrl.clear();
-              _licenceCtrl.clear();
-              Navigator.pop(ctx);
+              if (!ctx.mounted) return;
+              if (ok) {
+                _nomCtrl.clear();
+                _adresseCtrl.clear();
+                _telCtrl.clear();
+                _emailCtrl.clear();
+                _licenceCtrl.clear();
+                Navigator.pop(ctx);
+              } else {
+                ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                  content: Text(phProv.error ?? 'Erreur'),
+                  backgroundColor: AppTheme.errorColor,
+                ));
+              }
             },
             child: const Text('Ajouter'),
           ),
@@ -89,6 +98,7 @@ class _PharmaciesListScreenState extends State<PharmaciesListScreen> {
     final provider = context.watch<PharmacieProvider>();
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Pharmacies')),
       body: provider.isLoading
           ? const LoadingWidget()
           : provider.pharmacies.isEmpty

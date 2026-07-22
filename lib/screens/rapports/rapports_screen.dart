@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/rapport_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/loading_widget.dart';
@@ -163,9 +164,9 @@ class _RapportsScreenState extends State<RapportsScreen> {
                     childAspectRatio: 1.3,
                     children: [
                       StatCard(title: 'Total ventes', value: '$totalVentes', icon: Icons.receipt, color: AppTheme.accentColor),
-                      StatCard(title: 'CA total', value: '$caTotal CFA', icon: Icons.attach_money, color: AppTheme.successColor),
+                      StatCard(title: 'CA total', value: '$caTotal ${AppCurrency.symbol}', icon: Icons.attach_money, color: AppTheme.successColor),
                       StatCard(title: 'Transactions', value: '$nbTransactions', icon: Icons.swap_horiz, color: AppTheme.warningColor),
-                      StatCard(title: 'Panier moyen', value: '${panierMoyen.toStringAsFixed(0)} CFA', icon: Icons.shopping_cart, color: Colors.purple),
+                      StatCard(title: 'Panier moyen', value: '${panierMoyen.toStringAsFixed(0)} ${AppCurrency.symbol}', icon: Icons.shopping_cart, color: Colors.purple),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -235,15 +236,17 @@ class _RapportsScreenState extends State<RapportsScreen> {
     final panierMoyen = (data['panier_moyen'] as num?)?.toDouble() ?? 0;
     final bestSellers = (data['meilleures_ventes'] as List<dynamic>?) ?? [];
 
-    final periodLabel = _period == 'custom' ? 'Du ${DateFormat('dd/MM/yyyy').format(_dateDebut!)} au ${DateFormat('dd/MM/yyyy').format(_dateFin!)}' : _period;
+    final periodLabel = _period == 'custom' && _dateDebut != null && _dateFin != null
+        ? 'Du ${DateFormat('dd/MM/yyyy').format(_dateDebut!)} au ${DateFormat('dd/MM/yyyy').format(_dateFin!)}'
+        : _period;
     final buf = StringBuffer();
     buf.writeln('Rapport de ventes - $periodLabel');
     buf.writeln('');
     buf.writeln('Indicateur,Valeur');
     buf.writeln('Total ventes,$totalVentes');
-    buf.writeln('CA total,$caTotal CFA');
+    buf.writeln('CA total,$caTotal ${AppCurrency.symbol}');
     buf.writeln('Transactions,$nbTransactions');
-    buf.writeln('Panier moyen,${panierMoyen.toStringAsFixed(0)} CFA');
+    buf.writeln('Panier moyen,${panierMoyen.toStringAsFixed(0)} ${AppCurrency.symbol}');
     buf.writeln('');
     buf.writeln('Meilleures ventes');
     buf.writeln('Médicament,Quantité vendue');

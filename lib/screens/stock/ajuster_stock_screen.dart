@@ -34,14 +34,13 @@ class _AjusterStockScreenState extends State<AjusterStockScreen> {
   }
 
   Future<void> _ajuster() async {
-    final qte = double.tryParse(_quantiteCtrl.text);
+    final qte = int.tryParse(_quantiteCtrl.text);
     if (qte == null || qte <= 0) return;
 
     final stockProv = context.read<StockProvider>();
     final success = await stockProv.adjustStock(widget.stockId, {
       'type_mouvement': _typeMouvement,
       'quantite': qte,
-      'numero_lot': _lotCtrl.text.trim().isNotEmpty ? _lotCtrl.text.trim() : null,
       'motif': _motifCtrl.text.trim(),
     });
 

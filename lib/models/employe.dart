@@ -21,6 +21,13 @@ class Employe {
     this.numeroEmploye,
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory Employe.fromJson(Map<String, dynamic> json) {
     final detail = json['utilisateur_detail'] as Map<String, dynamic>?;
     return Employe(
@@ -31,7 +38,7 @@ class Employe {
       pharmacieId: json['pharmacie'],
       poste: json['poste'],
       dateEmbauche: json['date_embauche'],
-      salaire: (json['salaire'] as num?)?.toDouble(),
+      salaire: _toDouble(json['salaire']),
       numeroEmploye: json['numero_employe'],
     );
   }

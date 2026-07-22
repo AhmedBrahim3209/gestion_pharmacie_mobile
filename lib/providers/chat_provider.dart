@@ -23,7 +23,7 @@ class ChatProvider extends ChangeNotifier {
     try {
       final response = await _api.sendChatMessage(text);
       _messages.add(ChatMessage(
-        message: response['response'] ?? response['message'] ?? 'Pas de réponse',
+        message: response['answer'] ?? response['response'] ?? response['message'] ?? 'Pas de réponse',
         isUser: false,
       ));
     } catch (e) {

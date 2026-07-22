@@ -21,6 +21,13 @@ class Abonnement {
     this.notes,
   });
 
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory Abonnement.fromJson(Map<String, dynamic> json) {
     return Abonnement(
       id: json['id'],
@@ -30,7 +37,7 @@ class Abonnement {
       statut: json['statut'] ?? 'actif',
       dateDebut: json['date_debut'],
       dateFin: json['date_fin'],
-      montant: (json['montant'] as num?)?.toDouble(),
+      montant: _toDouble(json['montant']),
       notes: json['notes'],
     );
   }

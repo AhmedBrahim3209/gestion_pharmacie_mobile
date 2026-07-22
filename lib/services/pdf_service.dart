@@ -6,10 +6,26 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_file/open_file.dart';
+import '../config/currency_helper.dart';
 import '../models/vente.dart';
+import '../models/prescription.dart';
+
+class LigneRecuData {
+  final String medicamentNom;
+  final int quantite;
+  final double prixUnitaire;
+  LigneRecuData({required this.medicamentNom, required this.quantite, required this.prixUnitaire});
+  double get sousTotal => prixUnitaire * quantite;
+}
 
 class PdfService {
-  static Future<Uint8List> generateSaleReceipt(Vente vente) async {
+  static Future<Uint8List> generateSaleReceipt(Vente vente, {List<LigneRecuData>? lignesRecu}) async {
+    final lignes = lignesRecu ?? vente.lignes.map((l) => LigneRecuData(
+      medicamentNom: l.medicamentNom,
+      quantite: l.quantite.toInt(),
+      prixUnitaire: l.prixUnitaire,
+    )).toList();
+
     final doc = pw.Document();
     doc.addPage(
       pw.MultiPage(
@@ -22,18 +38,18 @@ class PdfService {
           pw.Center(child: pw.Text('Date: ${vente.dateVente}', style: const pw.TextStyle(fontSize: 10))),
           pw.Divider(),
           pw.SizedBox(height: 8),
-          ...vente.lignes.map((l) => pw.Row(
+          ...lignes.map((l) => pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
               pw.Expanded(child: pw.Text('${l.medicamentNom} x${l.quantite.toStringAsFixed(0)}', style: const pw.TextStyle(fontSize: 10))),
-              pw.Text('${l.sousTotal.toStringAsFixed(0)} CFA', style: const pw.TextStyle(fontSize: 10)),
+              pw.Text('${l.sousTotal.toStringAsFixed(0)} ${AppCurrency.symbol}', style: const pw.TextStyle(fontSize: 10)),
             ],
           )),
           pw.Divider(),
           pw.SizedBox(height: 8),
-          _totalRow('Total', '${vente.montantTotal.toStringAsFixed(0)} CFA'),
-          if (vente.remise > 0) _totalRow('Remise', '-${vente.remise.toStringAsFixed(0)} CFA'),
-          _totalRow('Net à payer', '${vente.montantNet.toStringAsFixed(0)} CFA', bold: true),
+          _totalRow('Total', '${vente.montantTotal.toStringAsFixed(0)} ${AppCurrency.symbol}'),
+          if (vente.remise > 0) _totalRow('Remise', '-${vente.remise.toStringAsFixed(0)} ${AppCurrency.symbol}'),
+          _totalRow('Net à payer', '${vente.montantNet.toStringAsFixed(0)} ${AppCurrency.symbol}', bold: true),
           pw.SizedBox(height: 16),
           pw.Center(child: pw.Text('Merci de votre visite !', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey))),
         ],
@@ -42,7 +58,7 @@ class PdfService {
     return doc.save();
   }
 
-  static Future<Uint8List> generatePrescription(dynamic p) async {
+  static Future<Uint8List> generatePrescription(Prescription p) async {
     final doc = pw.Document();
     doc.addPage(
       pw.Page(

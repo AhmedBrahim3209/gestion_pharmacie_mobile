@@ -21,7 +21,6 @@ import 'profile/profile_screen.dart';
 import 'paiements/paiements_list_screen.dart';
 import 'utilisateurs/utilisateurs_list_screen.dart';
 import 'achats/fournisseurs_screen.dart';
-import 'stock/lot_list_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,6 +31,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -44,6 +44,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _openDrawer() {
+    _scaffoldKey.currentState?.openDrawer();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -54,146 +58,45 @@ class _HomeScreenState extends State<HomeScreen> {
         final isEmploye = user?.isEmploye == true;
         final isCaissier = user?.isCaissier == true;
 
-        final screens = _buildScreens(isCaissier, isSuper);
-
         return Scaffold(
-          appBar: AppBar(
-            title: Text(_getTitle(isCaissier, isSuper)),
-            actions: [
-              if (!isCaissier)
-                IconButton(
-                  icon: const Icon(Icons.notifications_outlined),
-                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-                ),
-              IconButton(
-                icon: CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Colors.white.withValues(alpha: 0.2),
-                  child: Text(user?.username[0].toUpperCase() ?? '?', style: const TextStyle(fontSize: 12, color: Colors.white)),
-                ),
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen())),
-              ),
-            ],
-          ),
-          drawer: Drawer(
-            child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-                      ),
-                    ),
-                    child: DrawerHeader(
-                      margin: EdgeInsets.zero,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Colors.white.withValues(alpha: 0.2),
-                            child: Text(user?.username[0].toUpperCase() ?? '?', style: const TextStyle(fontSize: 24, color: Colors.white)),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(user?.displayName ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                          if (user != null) ...[
-                            const SizedBox(height: 2),
-                            Text(user.role.replaceAll('_', ' ').toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, letterSpacing: 1)),
-                            if (user.pharmacieNom != null) Text(user.pharmacieNom!, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  if (isCaissier) ...[
-                    _sectionHeader('Ventes'),
-                    _drawerItem(Icons.add_shopping_cart, Icons.add_shopping_cart, 'Point de vente', 0),
-                    _drawerItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Historique', 1),
-                  ] else if (isSuper) ...[
-                    _sectionHeader('Plateforme'),
-                    _drawerItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', 0),
-                  ] else ...[
-                    _sectionHeader('Gestion'),
-                    _drawerItem(Icons.dashboard_outlined, Icons.dashboard, 'Dashboard', 0),
-                    _drawerItem(Icons.medication_outlined, Icons.medication, 'Médicaments', 1),
-                    _drawerItem(Icons.inventory_outlined, Icons.inventory, 'Stock', 2),
-                    _drawerItem(Icons.inventory_2_outlined, Icons.inventory_2, 'Gestion des lots', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LotListScreen()))),
-                    _drawerItem(Icons.shopping_cart_outlined, Icons.shopping_cart, 'Point de vente', 3),
-                  ],
-                  if (!isCaissier && !isSuper)
-                    _drawerItem(Icons.receipt_long_outlined, Icons.receipt_long, 'Historique des ventes', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VentesListScreen()))),
-                  if (isAdmin) ...[
-                    _drawerItem(Icons.shopping_bag_outlined, Icons.shopping_bag, 'Achats', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AchatsListScreen()))),
-                    _drawerItem(Icons.people_outline, Icons.people, 'Clients', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClientsListScreen()))),
-                    _drawerItem(Icons.description_outlined, Icons.description, 'Prescriptions', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrescriptionsListScreen()))),
-                  ],
-                  if (isAdmin) ...[
-                    _sectionHeader('Administration'),
-                    _drawerItem(Icons.badge_outlined, Icons.badge, 'Employés', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmployesListScreen()))),
-                    _drawerItem(Icons.assignment_outlined, Icons.assignment, 'Fournisseurs', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FournisseursScreen()))),
-                    _drawerItem(Icons.inventory_2_outlined, Icons.inventory_2, 'Gestion des lots', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LotListScreen()))),
-                  ],
-                  if (isAdmin) ...[
-                    _drawerItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Rapports', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RapportsScreen()))),
-                    _drawerItem(Icons.smart_toy_outlined, Icons.smart_toy, 'Assistant IA', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()))),
-                    _drawerItem(Icons.settings_outlined, Icons.settings, 'Paramètres', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParametresScreen()))),
-                    _drawerItem(Icons.notifications_outlined, Icons.notifications, 'Notifications', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
-                  ],
-                  if (isSuper) ...[
-                    _sectionHeader('Plateforme'),
-                    _drawerItem(Icons.local_pharmacy_outlined, Icons.local_pharmacy, 'Pharmacies', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PharmaciesListScreen()))),
-                    _drawerItem(Icons.people_outline, Icons.people, 'Utilisateurs', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UtilisateursListScreen()))),
-                    _drawerItem(Icons.subscriptions_outlined, Icons.subscriptions, 'Abonnements', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementsListScreen()))),
-                    _drawerItem(Icons.payments_outlined, Icons.payments, 'Paiements', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaiementsListScreen()))),
-                    _drawerItem(Icons.bar_chart_outlined, Icons.bar_chart, 'Rapports', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RapportsScreen()))),
-                    _drawerItem(Icons.settings_outlined, Icons.settings, 'Paramètres', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParametresScreen()))),
-                    _drawerItem(Icons.notifications_outlined, Icons.notifications, 'Notifications', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
-                    _drawerItem(Icons.smart_toy_outlined, Icons.smart_toy, 'Assistant IA', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()))),
-                  ],
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Divider(),
-                  ),
-                  _drawerItem(Icons.person_outline, Icons.person, 'Profil', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))),
-                  ListTile(
-                    leading: const Icon(Icons.logout, color: AppTheme.errorColor),
-                    title: const Text('Déconnexion', style: TextStyle(color: AppTheme.errorColor)),
-                    onTap: () async {
-                      Navigator.pop(context);
-                      try {
-                        await auth.logout();
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Erreur de déconnexion: $e'), backgroundColor: AppTheme.errorColor),
-                          );
-                        }
-                      }
-                    },
-                  ),
-                ],
-            ),
-          ),
-          body: screens[_currentIndex],
+          key: _scaffoldKey,
+          drawer: _buildDrawer(context, auth, isCaissier, isSuper, isAdmin, isEmploye),
+          body: _buildScreenWithDrawerButton(isCaissier, isSuper, user),
           bottomNavigationBar: _buildBottomNav(isCaissier, isSuper),
         );
       },
     );
   }
 
-  List<Widget> _buildScreens(bool isCaissier, bool isSuper) {
+  Widget _buildScreenWithDrawerButton(bool isCaissier, bool isSuper, user) {
+    final screen = _buildScreens(isCaissier, isSuper, user);
+    return screen;
+  }
+
+  Widget _buildScreens(bool isCaissier, bool isSuper, user) {
     if (isCaissier) {
-      return const [NouvelleVenteScreen(), VentesListScreen()];
+      switch (_currentIndex) {
+        case 0: return NouvelleVenteScreen(onMenuTap: _openDrawer);
+        case 1: return VentesListScreen(onMenuTap: _openDrawer);
+        default: return NouvelleVenteScreen(onMenuTap: _openDrawer);
+      }
     }
     if (isSuper) {
-      return const [DashboardScreen(), PharmaciesListScreen(), AbonnementsListScreen(), PaiementsListScreen()];
+      switch (_currentIndex) {
+        case 0: return DashboardScreen(onMenuTap: _openDrawer);
+        case 1: return PharmaciesListScreen();
+        case 2: return AbonnementsListScreen();
+        case 3: return PaiementsListScreen();
+        default: return DashboardScreen(onMenuTap: _openDrawer);
+      }
     }
-    return const [DashboardScreen(), MedicamentsListScreen(), StockListScreen(), NouvelleVenteScreen()];
+    switch (_currentIndex) {
+      case 0: return DashboardScreen(onMenuTap: _openDrawer);
+      case 1: return MedicamentsListScreen(onMenuTap: _openDrawer);
+      case 2: return StockListScreen(onMenuTap: _openDrawer);
+      case 3: return NouvelleVenteScreen(onMenuTap: _openDrawer);
+      default: return DashboardScreen(onMenuTap: _openDrawer);
+    }
   }
 
   Widget _buildBottomNav(bool isCaissier, bool isSuper) {
@@ -231,56 +134,168 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  String _getTitle(bool isCaissier, bool isSuper) {
-    if (isCaissier) {
-      return _currentIndex == 0 ? 'Point de vente' : 'Historique';
-    }
-    if (isSuper) {
-      switch (_currentIndex) {
-        case 0: return 'Dashboard';
-        case 1: return 'Pharmacies';
-        case 2: return 'Abonnements';
-        case 3: return 'Paiements';
-        default: return 'Plateforme';
-      }
-    }
-    switch (_currentIndex) {
-      case 0: return 'Dashboard';
-      case 1: return 'Médicaments';
-      case 2: return 'Stock';
-      case 3: return 'Point de vente';
-      default: return 'Gestion Pharmacie';
-    }
+  Widget _buildDrawer(BuildContext context, AuthProvider auth, bool isCaissier, bool isSuper, bool isAdmin, bool isEmploye) {
+    final user = auth.user;
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1E40AF), Color(0xFF172231)],
+              ),
+            ),
+            child: DrawerHeader(
+              margin: EdgeInsets.zero,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    child: Text(user?.username[0].toUpperCase() ?? '?', style: const TextStyle(fontSize: 24, color: Colors.white)),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(user?.displayName ?? '', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                  if (user != null) ...[
+                    const SizedBox(height: 2),
+                    Text(user.role.replaceAll('_', ' ').toUpperCase(), style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, letterSpacing: 1)),
+                    if (user.pharmacieNom != null) Text(user.pharmacieNom!, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          if (isCaissier) ...[
+            _drawerItem(Icons.add_shopping_cart, 'Point de vente', 0),
+            _drawerItem(Icons.receipt_long, 'Historique', 1),
+          ] else if (isSuper) ...[
+            _drawerItem(Icons.dashboard, 'Dashboard', 0),
+          ] else ...[
+            _drawerItem(Icons.dashboard, 'Dashboard', 0),
+            _drawerItem(Icons.medication, 'Médicaments', 1),
+            _drawerItem(Icons.inventory, 'Stock', 2),
+          ],
+          if (!isCaissier && !isSuper) ...[
+            _drawerItem(Icons.shopping_cart, 'Point de vente', 3),
+            _drawerItem(Icons.receipt_long, 'Historique ventes', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const VentesListScreen()))),
+          ],
+          if (isAdmin) ...[
+            const Divider(height: 20, color: AppTheme.sidebarBorder),
+            _sectionHeader('Achats & Clients'),
+            _drawerItem(Icons.shopping_bag, 'Achats', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AchatsListScreen()))),
+            _drawerItem(Icons.people, 'Clients', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ClientsListScreen()))),
+            _drawerItem(Icons.description, 'Prescriptions', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PrescriptionsListScreen()))),
+            const Divider(height: 20, color: AppTheme.sidebarBorder),
+            _sectionHeader('Administration'),
+            _drawerItem(Icons.badge, 'Employés', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmployesListScreen()))),
+            _drawerItem(Icons.assignment, 'Fournisseurs', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FournisseursScreen()))),
+            const Divider(height: 20, color: AppTheme.sidebarBorder),
+            _sectionHeader('Outils'),
+            _drawerItem(Icons.bar_chart, 'Rapports', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RapportsScreen()))),
+            _drawerItem(Icons.smart_toy, 'Assistant IA', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()))),
+            _drawerItem(Icons.notifications, 'Notifications', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
+            _drawerItem(Icons.settings, 'Paramètres', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParametresScreen()))),
+          ],
+          if (isSuper) ...[
+            const Divider(height: 20, color: AppTheme.sidebarBorder),
+            _sectionHeader('Plateforme'),
+            _drawerItem(Icons.local_pharmacy, 'Pharmacies', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PharmaciesListScreen()))),
+            _drawerItem(Icons.people, 'Utilisateurs', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UtilisateursListScreen()))),
+            _drawerItem(Icons.subscriptions, 'Abonnements', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementsListScreen()))),
+            _drawerItem(Icons.payments, 'Paiements', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaiementsListScreen()))),
+            _drawerItem(Icons.bar_chart, 'Rapports', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RapportsScreen()))),
+            _drawerItem(Icons.notifications, 'Notifications', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
+            _drawerItem(Icons.smart_toy, 'Assistant IA', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()))),
+            _drawerItem(Icons.settings, 'Paramètres', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParametresScreen()))),
+          ],
+          const Divider(height: 20, color: AppTheme.sidebarBorder),
+          _drawerItem(Icons.person, 'Profil', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()))),
+          ListTile(
+            leading: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.logout, color: AppTheme.errorColor, size: 20),
+            ),
+            title: const Text('Déconnexion', style: TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w600)),
+            onTap: () async {
+              Navigator.pop(context);
+              try {
+                await auth.logout();
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erreur: $e'), backgroundColor: AppTheme.errorColor),
+                  );
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _sectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
-      child: Text(title, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primaryColor, letterSpacing: 1)),
+      padding: const EdgeInsets.fromLTRB(20, 8, 16, 4),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+          color: AppTheme.textSidebar,
+          letterSpacing: 1,
+        ),
+      ),
     );
   }
 
-  Widget _drawerItem(IconData icon, IconData selectedIcon, String title, dynamic target) {
+  Widget _drawerItem(IconData icon, String title, dynamic target) {
     final isSelected = target is int && _currentIndex == target;
-    return ListTile(
-      leading: Icon(isSelected ? selectedIcon : icon, color: isSelected ? AppTheme.primaryColor : Colors.grey.shade600),
-      title: Text(title, style: TextStyle(
-        fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        color: isSelected ? AppTheme.primaryColor : Colors.grey.shade800,
-      )),
-      selected: isSelected,
-      selectedTileColor: AppTheme.primaryColor.withValues(alpha: 0.08),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      onTap: () {
-        Navigator.pop(context);
-        if (target is int) {
-          setState(() => _currentIndex = target);
-        } else if (target is VoidCallback) {
-          target();
-        } else if (target is Function()) {
-          target();
-        }
-      },
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: isSelected ? AppTheme.sidebarActive : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        border: isSelected ? Border.all(color: AppTheme.primaryLight.withValues(alpha: 0.4)) : null,
+      ),
+      child: ListTile(
+        dense: true,
+        leading: Icon(icon, color: isSelected ? AppTheme.textSidebarActive : AppTheme.textSidebar, size: 20),
+        title: Text(
+          title,
+          style: TextStyle(
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            color: isSelected ? AppTheme.textSidebarActive : AppTheme.textSidebar,
+            fontSize: 14,
+          ),
+        ),
+        trailing: isSelected ? Container(
+          width: 3,
+          height: 20,
+          decoration: BoxDecoration(
+            color: AppTheme.primaryLight,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ) : null,
+        onTap: () {
+          Navigator.pop(context);
+          if (target is int) {
+            setState(() => _currentIndex = target);
+          } else if (target is Function()) {
+            target();
+          }
+        },
+      ),
     );
   }
 }

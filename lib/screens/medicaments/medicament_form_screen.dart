@@ -86,7 +86,9 @@ class _MedicamentFormScreenState extends State<MedicamentFormScreen> {
       'prix_achat': double.tryParse(_prixAchatCtrl.text),
       'prix_vente': prixVente,
       'categorie': _categorieId,
+      if (!isEditing) 'unite': 'unité',
       'date_expiration': dateExp?.toIso8601String().split('T')[0],
+      if (!isEditing) 'est_actif': true,
     };
     final provider = context.read<MedicamentProvider>();
     bool success;

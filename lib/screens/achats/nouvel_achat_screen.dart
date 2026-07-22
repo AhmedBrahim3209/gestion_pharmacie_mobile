@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../models/medicament.dart';
 import '../../providers/medicament_provider.dart';
 import '../../providers/achat_provider.dart';
@@ -44,6 +45,7 @@ class _NouvelAchatScreenState extends State<NouvelAchatScreen> {
     final success = await achatProv.createAchat(data);
     if (!mounted) return;
     if (success) {
+      try { if (mounted) context.read<MedicamentProvider>().loadMedicaments(); } catch (_) {}
       Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(achatProv.error ?? 'Erreur lors de l\'achat'), backgroundColor: AppTheme.errorColor));
@@ -76,9 +78,9 @@ class _NouvelAchatScreenState extends State<NouvelAchatScreen> {
               itemBuilder: (context, index) {
                 final med = medicaments[index];
                 return ListTile(
-                  leading: CircleAvatar(child: Text('${(med.prixAchat ?? 0).toStringAsFixed(0)} CFA', style: const TextStyle(fontSize: 9))),
+                  leading: CircleAvatar(child: Text('${(med.prixAchat ?? 0).toStringAsFixed(0)} ${AppCurrency.symbol}', style: const TextStyle(fontSize: 9))),
                   title: Text(med.nom),
-                  subtitle: Text('Prix achat: ${med.prixAchat ?? "N/A"} CFA'),
+                  subtitle: Text('Prix achat: ${med.prixAchat ?? "N/A"} ${AppCurrency.symbol}'),
                   trailing: IconButton(icon: const Icon(Icons.add), onPressed: () => _ajouterLigne(med)),
                 );
               },
@@ -89,7 +91,7 @@ class _NouvelAchatScreenState extends State<NouvelAchatScreen> {
             padding: const EdgeInsets.all(16),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               const Text('Total:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text('$_total CFA', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+              Text('$_total ${AppCurrency.symbol}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             ]),
           ),
         ],

@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/medicament_provider.dart';
 import '../../widgets/loading_widget.dart';
 import 'medicament_form_screen.dart';
 import 'categories_screen.dart';
 
 class MedicamentsListScreen extends StatefulWidget {
-  const MedicamentsListScreen({super.key});
+  final VoidCallback? onMenuTap;
+  const MedicamentsListScreen({super.key, this.onMenuTap});
 
   @override
   State<MedicamentsListScreen> createState() => _MedicamentsListScreenState();
@@ -43,6 +45,17 @@ class _MedicamentsListScreenState extends State<MedicamentsListScreen> {
     }).toList();
 
     return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.menu), onPressed: widget.onMenuTap),
+        title: const Text('Médicaments'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.category),
+            tooltip: 'Catégories',
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoriesScreen())),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           if (provider.error != null)
@@ -129,7 +142,7 @@ class _MedicamentsListScreenState extends State<MedicamentsListScreen> {
                                     children: [
                                       Text(med.nom, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary)),
                                       const SizedBox(height: 4),
-                                      Text('${med.prixVente} CFA  •  Stock: ${med.stockQuantite?.toStringAsFixed(0) ?? "N/A"} ${med.unite}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                                      Text('${med.prixVente} ${AppCurrency.symbol}  •  Stock: ${med.stockQuantite?.toStringAsFixed(0) ?? "N/A"} ${med.unite}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                                     ],
                                   ),
                                 ),
@@ -175,38 +188,41 @@ class _MedicamentsListScreenState extends State<MedicamentsListScreen> {
   void _showDetail(BuildContext context, med) {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 16),
-            Text(med.nom, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-            const SizedBox(height: 16),
-            _detailRow('Catégorie', med.categorieNom ?? 'N/A'),
-            const Divider(height: 1),
-            _detailRow('Prix vente', '${med.prixVente} CFA'),
-            const Divider(height: 1),
-            _detailRow('Prix achat', med.prixAchat != null ? '${med.prixAchat} CFA' : 'N/A'),
-            const Divider(height: 1),
-            _detailRow('Stock', '${med.stockQuantite?.toStringAsFixed(0) ?? "N/A"} ${med.unite}'),
-            const Divider(height: 1),
-            _detailRow('Code barre', med.codeBarre ?? 'N/A'),
-            const Divider(height: 1),
-            _detailRow('Expiration', med.dateExpiration != null ? '${med.dateExpiration!.day}/${med.dateExpiration!.month}/${med.dateExpiration!.year}' : 'N/A'),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton.icon(icon: const Icon(Icons.edit_outlined), label: const Text('Modifier'), onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => MedicamentFormScreen(medicament: med))); }),
-                const SizedBox(width: 8),
-                TextButton.icon(icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor), label: const Text('Supprimer', style: TextStyle(color: AppTheme.errorColor)), onPressed: () { Navigator.pop(ctx); _confirmDelete(med.id); }),
-              ],
-            ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              Text(med.nom, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+              const SizedBox(height: 16),
+              _detailRow('Catégorie', med.categorieNom ?? 'N/A'),
+              const Divider(height: 1),
+              _detailRow('Prix vente', '${med.prixVente} ${AppCurrency.symbol}'),
+              const Divider(height: 1),
+              _detailRow('Prix achat', med.prixAchat != null ? '${med.prixAchat} ${AppCurrency.symbol}' : 'N/A'),
+              const Divider(height: 1),
+              _detailRow('Stock', '${med.stockQuantite?.toStringAsFixed(0) ?? "N/A"} ${med.unite}'),
+              const Divider(height: 1),
+              _detailRow('Code barre', med.codeBarre ?? 'N/A'),
+              const Divider(height: 1),
+              _detailRow('Expiration', med.dateExpiration != null ? '${med.dateExpiration!.day}/${med.dateExpiration!.month}/${med.dateExpiration!.year}' : 'N/A'),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(icon: const Icon(Icons.edit_outlined), label: const Text('Modifier'), onPressed: () { Navigator.pop(ctx); Navigator.push(context, MaterialPageRoute(builder: (_) => MedicamentFormScreen(medicament: med))); }),
+                  const SizedBox(width: 8),
+                  TextButton.icon(icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor), label: const Text('Supprimer', style: TextStyle(color: AppTheme.errorColor)), onPressed: () { Navigator.pop(ctx); _confirmDelete(med.id); }),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

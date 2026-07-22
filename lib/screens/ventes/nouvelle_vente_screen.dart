@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:printing/printing.dart';
 import '../../models/medicament.dart';
+import '../../models/vente.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/medicament_provider.dart';
 import '../../providers/vente_provider.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../services/api_service.dart';
 import '../../services/pdf_service.dart';
 import '../../widgets/loading_widget.dart';
 
 class NouvelleVenteScreen extends StatefulWidget {
-  const NouvelleVenteScreen({super.key});
+  final VoidCallback? onMenuTap;
+  const NouvelleVenteScreen({super.key, this.onMenuTap});
 
   @override
   State<NouvelleVenteScreen> createState() => _NouvelleVenteScreenState();
@@ -84,51 +89,122 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
 
   Future<void> _finaliser() async {
     if (_lignes.isEmpty) return;
+
+    final api = ApiService();
+    final lignesPayload = _lignes.map((l) => {
+      'medicament': l.medicament.id,
+      'quantite': l.quantite,
+      'prix_unitaire': l.medicament.prixVente,
+    }).toList();
+
     final data = {
-      'lignes': _lignes.map((l) => {'medicament': l.medicament.id, 'quantite': l.quantite, 'prix_unitaire': l.medicament.prixVente}).toList(),
-      'remise': _remise,
-      'tva': _tauxTva,
-      'mode_paiement': _modePaiement,
+      'lignes': lignesPayload,
+      'remise': double.parse(_remise.toStringAsFixed(2)),
       'montant_recu': double.tryParse(_montantRecu),
-      'monnaie': _monnaie,
     };
     final venteProv = context.read<VenteProvider>();
     final vente = await venteProv.createVente(data);
     if (!mounted) return;
-    if (vente != null) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 8), Text('Vente effectuée')]),
-          content: const Text('La vente a été enregistrée avec succès.'),
-          actions: [
-            TextButton(
-              onPressed: () { Navigator.pop(ctx); Navigator.pop(context); },
-              child: const Text('Fermer'),
-            ),
-            ElevatedButton.icon(
-              icon: const Icon(Icons.print, size: 18),
-              label: const Text('Imprimer ticket'),
-              onPressed: () async {
-                Navigator.pop(ctx);
-                final pdf = await PdfService.generateSaleReceipt(vente);
-                if (mounted) {
-                  await Printing.layoutPdf(onLayout: (_) => pdf);
-                  if (mounted) Navigator.pop(context);
-                }
-              },
-            ),
-          ],
-        ),
-      );
-    } else {
+
+    if (vente == null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(venteProv.error ?? 'Erreur lors de la création de la vente'),
         backgroundColor: AppTheme.errorColor,
       ));
+      return;
     }
+
+    if (_modePaiement.isNotEmpty && _montantRecu.isNotEmpty) {
+      try {
+        await api.addVentePayment(vente.id, {
+          'mode_paiement': _modePaiement.toLowerCase(),
+          'montant_paye': double.tryParse(_montantRecu) ?? vente.montantNet,
+          'monnaie_rendue': _monnaie,
+        });
+      } catch (_) {}
+    }
+
+    // Decrement stock for each item in the sale
+    try {
+      final stockList = await api.getStock();
+      final stockByMedicament = <int, int>{};
+      for (final s in stockList) {
+        if (s is Map && s['medicament'] != null && s['id'] != null) {
+          stockByMedicament[s['medicament']] = s['id'];
+        }
+      }
+      for (final l in _lignes) {
+        final stockId = stockByMedicament[l.medicament.id];
+        if (stockId != null) {
+          try {
+            await api.adjustStock(stockId, {
+              'type_mouvement': 'sortie',
+              'quantite': l.quantite,
+              'motif': 'Vente #${vente.numero}',
+            });
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+
+    try { if (mounted) context.read<MedicamentProvider>().loadMedicaments(); } catch (_) {}
+    try { if (mounted) context.read<DashboardProvider>().loadDashboard(); } catch (_) {}
+
+    if (!mounted) return;
+
+    // Build receipt data from local cart (fallback if API doesn't return lignes)
+    final lignesRecu = _lignes.map((l) => LigneRecuData(
+      medicamentNom: l.medicament.nom,
+      quantite: l.quantite,
+      prixUnitaire: l.medicament.prixVente,
+    )).toList();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [Icon(Icons.check_circle, color: Colors.green), SizedBox(width: 8), Text('Vente effectuée')]),
+        content: const Text('La vente a été enregistrée avec succès.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              setState(() => _lignes.clear());
+              Navigator.pop(ctx);
+            },
+            child: const Text('Fermer'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.print, size: 18),
+            label: const Text('Imprimer ticket'),
+            onPressed: () async {
+              setState(() => _lignes.clear());
+              Navigator.pop(ctx);
+              try {
+                Vente ventePourImpression = vente;
+                if (vente.lignes.isEmpty) {
+                  final detail = await venteProv.getVenteDetail(vente.id);
+                  if (detail != null && detail.lignes.isNotEmpty) {
+                    ventePourImpression = detail;
+                  }
+                }
+                final pdf = await PdfService.generateSaleReceipt(ventePourImpression, lignesRecu: lignesRecu);
+                if (mounted) {
+                  await Printing.layoutPdf(onLayout: (_) => pdf);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('Erreur d\'impression: $e'),
+                    backgroundColor: AppTheme.errorColor,
+                  ));
+                }
+              }
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -152,6 +228,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(icon: const Icon(Icons.menu), onPressed: widget.onMenuTap),
         title: const Text('Point de vente'),
         actions: [
           IconButton(
@@ -323,7 +400,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
                                         children: [
                                           Expanded(
                                             child: Text(
-                                              '${med.prixVente.toStringAsFixed(0)} CFA',
+                                              '${med.prixVente.toStringAsFixed(0)} ${AppCurrency.symbol}',
                                               style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
                                               overflow: TextOverflow.ellipsis,
                                             ),
@@ -348,7 +425,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 8, offset: const Offset(0, -2))],
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -2))],
             ),
             child: SafeArea(
               top: false,
@@ -366,7 +443,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
                             style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                           ),
                           Text(
-                            '$_net CFA',
+                            '$_net ${AppCurrency.symbol}',
                             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
                           ),
                         ],
@@ -402,8 +479,8 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
   Widget _buildCartSheet(BuildContext ctx, ScrollController scrollCtrl) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: ListView(
+        controller: scrollCtrl,
         children: [
           Center(
             child: Container(
@@ -427,71 +504,70 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
             ],
           ),
           const Divider(),
-          Expanded(
-            child: _lignes.isEmpty
-                ? Center(child: Text('Panier vide', style: TextStyle(color: Colors.grey.shade400)))
-                : ListView.builder(
-                    controller: scrollCtrl,
-                    itemCount: _lignes.length,
-                    itemBuilder: (_, index) {
-                      final l = _lignes[index];
-                      final total = l.medicament.prixVente * l.quantite;
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(l.medicament.nom, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${l.medicament.prixVente.toStringAsFixed(0)} CFA x ${l.quantite.toString()}',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Text('${total.toStringAsFixed(0)} CFA', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              const SizedBox(width: 8),
-                              Column(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline, size: 20),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () => setState(() => l.quantite++),
-                                  ),
-                                  Text(l.quantite.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline, size: 20),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                    onPressed: () {
-                                      setState(() {
-                                        l.quantite--;
-                                        if (l.quantite <= 0) _lignes.removeAt(index);
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
-                                padding: EdgeInsets.zero,
-                                constraints: const BoxConstraints(),
-                                onPressed: () => setState(() => _lignes.removeAt(index)),
-                              ),
-                            ],
-                          ),
+          if (_lignes.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              child: Center(child: Text('Panier vide', style: TextStyle(color: Colors.grey.shade400))),
+            )
+          else
+            ..._lignes.asMap().entries.map((entry) {
+              final index = entry.key;
+              final l = entry.value;
+              final total = l.medicament.prixVente * l.quantite;
+              return Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(l.medicament.nom, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 2),
+                            Text(
+                              '${l.medicament.prixVente.toStringAsFixed(0)} ${AppCurrency.symbol} x ${l.quantite.toString()}',
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                            ),
+                          ],
                         ),
-                      );
-                    },
+                      ),
+                      Text('${total.toStringAsFixed(0)} ${AppCurrency.symbol}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 8),
+                      Column(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.add_circle_outline, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => setState(() => l.quantite++),
+                          ),
+                          Text(l.quantite.toString(), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                          IconButton(
+                            icon: const Icon(Icons.remove_circle_outline, size: 20),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            onPressed: () {
+                              setState(() {
+                                l.quantite--;
+                                if (l.quantite <= 0) _lignes.removeAt(index);
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () => setState(() => _lignes.removeAt(index)),
+                      ),
+                    ],
                   ),
-          ),
+                ),
+              );
+            }),
           const Divider(),
           _buildCartSummary(),
           const SizedBox(height: 12),
@@ -525,21 +601,21 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
       ),
       child: Column(
         children: [
-          _summaryRow('Total HT', '$_totalHt CFA'),
+          _summaryRow('Total HT', '$_totalHt ${AppCurrency.symbol}'),
           const SizedBox(height: 4),
           _summaryRow(
             'TVA (${_tauxTva.toStringAsFixed(0)}%)',
-            '$_totalTva CFA',
+            '$_totalTva ${AppCurrency.symbol}',
             editable: true,
             hint: 'Taux %',
             onChanged: (v) => setState(() => _tauxTva = double.tryParse(v) ?? 0),
           ),
           const SizedBox(height: 4),
-          _summaryRow('Total TTC', '$_totalTtc CFA'),
+          _summaryRow('Total TTC', '$_totalTtc ${AppCurrency.symbol}'),
           const SizedBox(height: 4),
           _summaryRow(
             'Remise',
-            '$_remise CFA',
+            '$_remise ${AppCurrency.symbol}',
             editable: true,
             hint: 'Montant',
             onChanged: (v) => setState(() => _remise = double.tryParse(v) ?? 0),
@@ -549,7 +625,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('NET À PAYER', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              Text('$_net CFA', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
+              Text('$_net ${AppCurrency.symbol}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
             ],
           ),
         ],
@@ -626,7 +702,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
                       hintText: '0',
                       isDense: true,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                      prefixText: 'CFA ',
+                      prefixText: '${AppCurrency.symbol} ',
                     ),
                     keyboardType: TextInputType.number,
                     onChanged: (v) => setState(() => _montantRecu = v),
@@ -644,7 +720,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Monnaie', style: TextStyle(fontSize: 11, color: AppTheme.successColor.withValues(alpha: 0.7))),
-                        Text('${_monnaie.toStringAsFixed(0)} CFA', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.successColor)),
+                        Text('${_monnaie.toStringAsFixed(0)} ${AppCurrency.symbol}', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.successColor)),
                       ],
                     ),
                   ),

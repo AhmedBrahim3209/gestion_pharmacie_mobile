@@ -37,4 +37,13 @@ class VenteProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<Vente?> getVenteDetail(int id) async {
+    try {
+      final result = await _api.getVente(id);
+      return Vente.fromJson(result);
+    } catch (e) {
+      return null;
+    }
+  }
 }

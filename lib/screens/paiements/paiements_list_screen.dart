@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../config/currency_helper.dart';
 import '../../providers/paiement_provider.dart';
 import '../../widgets/loading_widget.dart';
 
@@ -36,6 +37,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
     final provider = context.watch<PaiementProvider>();
 
     return Scaffold(
+      appBar: AppBar(title: const Text('Paiements')),
       body: provider.isLoading
           ? const LoadingWidget()
           : provider.paiements.isEmpty
@@ -78,7 +80,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                                   children: [
                                     Text(p.reference, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary)),
                                     const SizedBox(height: 4),
-                                    Text('${p.montant.toStringAsFixed(0)} CFA  •  ${p.date ?? ""}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                                    Text('${p.montant.toStringAsFixed(0)} ${AppCurrency.symbol}  •  ${p.date ?? ""}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
                                   ],
                                 ),
                               ),

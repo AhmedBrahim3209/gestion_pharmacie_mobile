@@ -32,11 +32,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       content: TextField(controller: _nomCtrl, decoration: const InputDecoration(labelText: 'Nom', border: OutlineInputBorder()), autofocus: true),
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
-        TextButton(onPressed: () {
+        TextButton(onPressed: () async {
           if (_nomCtrl.text.isNotEmpty) {
-            context.read<MedicamentProvider>().createCategory({'nom': _nomCtrl.text});
-            _nomCtrl.clear();
-            Navigator.pop(ctx);
+            final ok = await context.read<MedicamentProvider>().createCategory({'nom': _nomCtrl.text});
+            if (!ctx.mounted) return;
+            if (ok) {
+              _nomCtrl.clear();
+              Navigator.pop(ctx);
+            }
           }
         }, child: const Text('Ajouter')),
       ],
