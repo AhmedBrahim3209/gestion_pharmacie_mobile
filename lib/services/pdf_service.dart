@@ -29,7 +29,7 @@ class PdfService {
     final doc = pw.Document();
     doc.addPage(
       pw.MultiPage(
-        pageFormat: PdfPageFormat.roll80,
+        pageFormat: const PdfPageFormat(80 * PdfPageFormat.mm, 297 * PdfPageFormat.mm),
         margin: const pw.EdgeInsets.all(16),
         build: (context) => [
           pw.Center(child: pw.Text('TICKET DE CAISSE', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold))),

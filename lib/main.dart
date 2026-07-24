@@ -20,6 +20,7 @@ import 'providers/chat_provider.dart';
 import 'providers/rapport_provider.dart';
 import 'providers/utilisateur_provider.dart';
 import 'providers/localisation_provider.dart';
+import 'providers/configuration_abonnement_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => RapportProvider()),
         ChangeNotifierProvider(create: (_) => UtilisateurProvider()),
+        ChangeNotifierProvider(create: (_) => ConfigurationAbonnementProvider()),
         ChangeNotifierProvider(create: (_) => LocalisationProvider()),
       ],
       child: Consumer<LocalisationProvider>(
@@ -63,6 +65,7 @@ class MyApp extends StatelessWidget {
           localizationsDelegates: [
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
           ],
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,

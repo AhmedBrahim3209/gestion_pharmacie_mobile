@@ -1,9 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:barcode_scan2/barcode_scan2.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../config/app_theme.dart';
 import '../../models/medicament.dart';
 import '../../providers/medicament_provider.dart';
+import '../../services/api_service.dart';
 
 class MedicamentFormScreen extends StatefulWidget {
   final Medicament? medicament;
@@ -22,8 +25,17 @@ class _MedicamentFormScreenState extends State<MedicamentFormScreen> {
   late TextEditingController _prixVenteCtrl;
   late TextEditingController _dateExpCtrl;
   int? _categorieId;
+  File? _imageFile;
 
   bool get isEditing => widget.medicament != null;
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _imageFile = File(picked.path));
+    }
+  }
 
   Future<void> _scanCode() async {
     try {
@@ -52,6 +64,19 @@ class _MedicamentFormScreenState extends State<MedicamentFormScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<MedicamentProvider>().loadCategories();
     });
+  }
+
+  Widget _imagePlaceholder() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.add_photo_alternate_outlined, size: 32, color: Colors.grey.shade400),
+          const SizedBox(height: 4),
+          Text('Ajouter une image', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+        ],
+      ),
+    );
   }
 
   @override
@@ -97,6 +122,12 @@ class _MedicamentFormScreenState extends State<MedicamentFormScreen> {
     } else {
       success = await provider.createMedicament(data);
     }
+    if (success && _imageFile != null) {
+      try {
+        final medId = isEditing ? widget.medicament!.id : (await ApiService().getMedicaments()).last['id'] as int;
+        await ApiService().uploadFile('/medicaments/$medId/upload-image/', _imageFile!);
+      } catch (_) {}
+    }
     if (!mounted) return;
     if (success) {
       Navigator.pop(context);
@@ -120,6 +151,29 @@ class _MedicamentFormScreenState extends State<MedicamentFormScreen> {
           key: _formKey,
           child: Column(
             children: [
+              InkWell(
+                onTap: _pickImage,
+                child: Container(
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: _imageFile != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: Image.file(_imageFile!, width: double.infinity, height: 120, fit: BoxFit.cover),
+                        )
+                      : widget.medicament?.image != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(widget.medicament!.image!, width: double.infinity, height: 120, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _imagePlaceholder()),
+                            )
+                          : _imagePlaceholder(),
+                ),
+              ),
+              const SizedBox(height: 16),
               TextFormField(controller: _nomCtrl, decoration: const InputDecoration(labelText: 'Nom', border: OutlineInputBorder()), validator: (v) => v == null || v.isEmpty ? 'Requis' : null),
               const SizedBox(height: 16),
               TextFormField(controller: _descriptionCtrl, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()), maxLines: 3),

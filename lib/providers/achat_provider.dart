@@ -62,7 +62,18 @@ class AchatProvider extends ChangeNotifier {
 
   Future<bool> updateFournisseur(int id, Map<String, dynamic> data) async {
     try {
-      await _api.patch('/achats/fournisseurs/$id/', data: data);
+      await _api.updateFournisseur(id, data);
+      await loadFournisseurs();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    }
+  }
+
+  Future<bool> deleteFournisseur(int id) async {
+    try {
+      await _api.deleteFournisseur(id);
       await loadFournisseurs();
       return true;
     } catch (e) {

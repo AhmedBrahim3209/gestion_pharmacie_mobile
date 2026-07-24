@@ -57,4 +57,57 @@ class AbonnementProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> renouvelerAbonnement(int id, Map<String, dynamic> data) async {
+    try {
+      await _api.renouvelerAbonnement(id, data);
+      await loadAbonnements();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getStats() async {
+    try {
+      return await _api.getAbonnementStats();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getPrix() async {
+    try {
+      return await _api.getAbonnementPrix();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getMonAbonnement() async {
+    try {
+      return await _api.getMonAbonnement();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> payerMonAbonnement(Map<String, dynamic> data) async {
+    try {
+      await _api.payerMonAbonnement(data);
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    }
+  }
+
+  Future<List<dynamic>?> getCaptures() async {
+    try {
+      return await _api.getAbonnementCaptures();
+    } catch (_) {
+      return null;
+    }
+  }
 }

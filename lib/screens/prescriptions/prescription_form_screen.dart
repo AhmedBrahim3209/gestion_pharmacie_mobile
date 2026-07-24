@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../models/prescription.dart';
 import '../../providers/prescription_provider.dart';
 import '../../providers/client_provider.dart';
 import '../../providers/medicament_provider.dart';
 
 class PrescriptionFormScreen extends StatefulWidget {
-  const PrescriptionFormScreen({super.key});
+  final Prescription? prescription;
+  const PrescriptionFormScreen({super.key, this.prescription});
 
   @override
   State<PrescriptionFormScreen> createState() => _PrescriptionFormScreenState();
@@ -14,6 +16,7 @@ class PrescriptionFormScreen extends StatefulWidget {
 
 class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _numeroCtrl = TextEditingController();
   int? _clientId;
   final _medecinCtrl = TextEditingController();
   final _specialiteCtrl = TextEditingController();
@@ -22,7 +25,10 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
   final _dateValiditeCtrl = TextEditingController();
   DateTime? _datePrescription;
   DateTime? _dateValidite;
+  bool _estServie = false;
   final _lignes = <_LigneOrdonnance>[];
+
+  bool get isEditing => widget.prescription != null;
 
   @override
   void initState() {
@@ -31,10 +37,36 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
       context.read<ClientProvider>().loadClients();
       context.read<MedicamentProvider>().loadMedicaments();
     });
+    final p = widget.prescription;
+    if (p != null) {
+      _numeroCtrl.text = p.numero;
+      _clientId = p.clientId;
+      _medecinCtrl.text = p.medecinNom ?? '';
+      _specialiteCtrl.text = p.medecinSpecialite ?? '';
+      _notesCtrl.text = p.notes ?? '';
+      _estServie = p.estServie;
+      if (p.datePrescription != null) {
+        final d = DateTime.tryParse(p.datePrescription!);
+        if (d != null) { _datePrescription = d; _datePrescriptionCtrl.text = '${d.day}/${d.month}/${d.year}'; }
+      }
+      if (p.dateValidite != null) {
+        final d = DateTime.tryParse(p.dateValidite!);
+        if (d != null) { _dateValidite = d; _dateValiditeCtrl.text = '${d.day}/${d.month}/${d.year}'; }
+      }
+      for (final l in p.lignes) {
+        _lignes.add(_LigneOrdonnance(
+          medicamentId: l.medicamentId,
+          quantite: l.quantite,
+          posologie: l.posologie ?? '',
+          duree: l.duree ?? '',
+        ));
+      }
+    }
   }
 
   @override
   void dispose() {
+    _numeroCtrl.dispose();
     _medecinCtrl.dispose();
     _specialiteCtrl.dispose();
     _notesCtrl.dispose();
@@ -72,12 +104,14 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
       return;
     }
     final data = {
+      if (isEditing) 'numero': _numeroCtrl.text.trim(),
       'client': _clientId,
       'medecin_nom': _medecinCtrl.text.trim(),
       'medecin_specialite': _specialiteCtrl.text.trim(),
       'date_prescription': _datePrescription?.toIso8601String().split('T').first,
       'date_validite': _dateValidite?.toIso8601String().split('T').first,
       'notes': _notesCtrl.text.trim(),
+      'est_servie': _estServie,
       'lignes': _lignes.map((l) => {
         'medicament': l.medicamentId,
         'quantite': l.quantite,
@@ -86,12 +120,17 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
       }).toList(),
     };
     final prescProv = context.read<PrescriptionProvider>();
-    final success = await prescProv.createPrescription(data);
+    final bool success;
+    if (isEditing) {
+      success = await prescProv.updatePrescription(widget.prescription!.id, data);
+    } else {
+      success = await prescProv.createPrescription(data);
+    }
     if (!mounted) return;
     if (success) {
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(prescProv.error ?? 'Erreur lors de la création'), backgroundColor: AppTheme.errorColor));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(prescProv.error ?? 'Erreur lors de l\'enregistrement'), backgroundColor: AppTheme.errorColor));
     }
   }
 
@@ -101,7 +140,7 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
     final medicaments = context.watch<MedicamentProvider>().medicaments;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouvelle Prescription'), actions: [
+      appBar: AppBar(title: Text(isEditing ? 'Modifier Prescription' : 'Nouvelle Prescription'), actions: [
         TextButton(onPressed: _save, child: const Text('Enregistrer')),
       ]),
       body: SingleChildScrollView(
@@ -111,6 +150,11 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              TextFormField(
+                controller: _numeroCtrl,
+                decoration: const InputDecoration(labelText: 'Numéro / Référence', border: OutlineInputBorder()),
+              ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<int>(
                 value: _clientId,
                 decoration: const InputDecoration(labelText: 'Client *', border: OutlineInputBorder()),
@@ -151,6 +195,13 @@ class _PrescriptionFormScreenState extends State<PrescriptionFormScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(controller: _notesCtrl, decoration: const InputDecoration(labelText: 'Notes', border: OutlineInputBorder()), maxLines: 3),
+              const SizedBox(height: 8),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Servie'),
+                value: _estServie,
+                onChanged: (v) => setState(() => _estServie = v),
+              ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

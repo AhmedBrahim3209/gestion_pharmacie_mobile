@@ -180,7 +180,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 borderData: FlBorderData(show: false),
                 minX: 0, maxX: 6,
-                minY: 0, maxY: (data.caParJour.isNotEmpty == true ? data.caParJour.reduce((a, b) => a > b ? a : b) * 1.3 : 350000),
+                minY: 0, maxY: _calcMaxY(data.caParJour),
                 lineBarsData: [
                   LineChartBarData(spots: _buildChartSpots(data.caParJour), isCurved: true, color: AppTheme.primaryColor, barWidth: 3, dotData: FlDotData(show: true), belowBarData: BarAreaData(show: true, color: AppTheme.primaryColor.withValues(alpha: 0.1))),
                 ],
@@ -271,6 +271,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ],
     );
+  }
+
+  double _calcMaxY(List<double> caParJour) {
+    if (caParJour.isEmpty) return 350000;
+    double max = 0;
+    for (final v in caParJour) {
+      if (v > max) max = v;
+    }
+    return max * 1.3;
   }
 
   List<FlSpot> _buildChartSpots(List<double>? caParJour) {

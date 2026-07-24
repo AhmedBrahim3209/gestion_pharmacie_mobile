@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
+import '../../models/client.dart';
 import '../../providers/client_provider.dart';
 
 class ClientFormScreen extends StatefulWidget {
-  const ClientFormScreen({super.key});
+  final Client? client;
+  const ClientFormScreen({super.key, this.client});
 
   @override
   State<ClientFormScreen> createState() => _ClientFormScreenState();
@@ -19,6 +21,22 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   final _adresseCtrl = TextEditingController();
   String? _sexe;
 
+  bool get isEditing => widget.client != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final c = widget.client;
+    if (c != null) {
+      _nomCtrl.text = c.nom;
+      _prenomCtrl.text = c.prenom ?? '';
+      _telCtrl.text = c.telephone ?? '';
+      _emailCtrl.text = c.email ?? '';
+      _adresseCtrl.text = c.adresse ?? '';
+      _sexe = c.sexe;
+    }
+  }
+
   @override
   void dispose() {
     _nomCtrl.dispose();
@@ -32,26 +50,32 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     final clientProv = context.read<ClientProvider>();
-    final success = await clientProv.createClient({
+    final data = {
       'nom': _nomCtrl.text.trim(),
       'prenom': _prenomCtrl.text.trim(),
       'telephone': _telCtrl.text.trim(),
       'email': _emailCtrl.text.trim(),
       'adresse': _adresseCtrl.text.trim(),
       'sexe': _sexe,
-    });
+    };
+    final bool success;
+    if (isEditing) {
+      success = await clientProv.updateClient(widget.client!.id, data);
+    } else {
+      success = await clientProv.createClient(data);
+    }
     if (!mounted) return;
     if (success) {
       Navigator.pop(context);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(clientProv.error ?? 'Erreur lors de la création'), backgroundColor: AppTheme.errorColor));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(clientProv.error ?? 'Erreur'), backgroundColor: AppTheme.errorColor));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nouveau Client'), actions: [
+      appBar: AppBar(title: Text(isEditing ? 'Modifier Client' : 'Nouveau Client'), actions: [
         TextButton(onPressed: _save, child: const Text('Enregistrer')),
       ]),
       body: SingleChildScrollView(
@@ -64,7 +88,11 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               const SizedBox(height: 16),
               TextFormField(controller: _prenomCtrl, decoration: const InputDecoration(labelText: 'Prénom', border: OutlineInputBorder())),
               const SizedBox(height: 16),
-              TextFormField(controller: _telCtrl, decoration: const InputDecoration(labelText: 'Téléphone', border: OutlineInputBorder()), keyboardType: TextInputType.phone),
+              TextFormField(controller: _telCtrl, decoration: const InputDecoration(labelText: 'Téléphone (8 chiffres)', border: OutlineInputBorder(), hintText: '45123456'), keyboardType: TextInputType.phone, validator: (v) {
+                if (v == null || v.isEmpty) return null;
+                if (v.replaceAll(RegExp(r'\D'), '').length != 8) return 'Le numéro doit faire 8 chiffres';
+                return null;
+              }),
               const SizedBox(height: 16),
               TextFormField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()), keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 16),

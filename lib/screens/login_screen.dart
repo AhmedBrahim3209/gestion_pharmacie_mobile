@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../config/app_theme.dart';
 import '../providers/auth_provider.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,13 +13,13 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -27,7 +28,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
     final success = await auth.login(
-      _emailController.text.trim(),
+      _usernameController.text.trim(),
       _passwordController.text,
     );
     if (!mounted) return;
@@ -132,13 +133,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             const SizedBox(height: 24),
                             TextFormField(
-                              controller: _emailController,
+                              controller: _usernameController,
                               decoration: const InputDecoration(
-                                labelText: 'Adresse email',
-                                hintText: 'exemple@email.com',
-                                prefixIcon: Icon(Icons.email_outlined),
+                                labelText: "Nom d'utilisateur",
+                                hintText: "Ex: ahmed_admin (pas votre email)",
+                                prefixIcon: Icon(Icons.person_outline),
                               ),
-                              keyboardType: TextInputType.emailAddress,
                               validator: (v) => v == null || v.isEmpty ? 'Requis' : null,
                             ),
                             const SizedBox(height: 16),
@@ -173,7 +173,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    TextButton(
+                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                      child: const Text('Créer un compte / Nouvelle pharmacie'),
+                    ),
+                    const SizedBox(height: 16),
                     Text('© 2026 Gestion Pharmacie', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                   ],
                 ),

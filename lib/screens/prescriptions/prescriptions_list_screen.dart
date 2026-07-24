@@ -176,8 +176,16 @@ class _PrescriptionsListScreenState extends State<PrescriptionsListScreen> {
             ],
             const SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
+                TextButton.icon(
+                  icon: const Icon(Icons.edit, color: AppTheme.primaryColor),
+                  label: const Text('Modifier', style: TextStyle(color: AppTheme.primaryColor)),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => PrescriptionFormScreen(prescription: p)));
+                  },
+                ),
                 TextButton.icon(
                   icon: const Icon(Icons.picture_as_pdf, color: AppTheme.primaryColor),
                   label: const Text('PDF', style: TextStyle(color: AppTheme.primaryColor)),

@@ -13,12 +13,12 @@ class AuthProvider extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _api.isAuthenticated;
 
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String email, String password) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
     try {
-      await _api.login(username, password);
+      await _api.login(email, password);
       final userData = await _api.getMe();
       _user = User.fromJson(userData);
       _isLoading = false;
@@ -50,6 +50,23 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _api.logout();
     } catch (_) {}
+  }
+
+  Future<bool> register(Map<String, dynamic> data) async {
+    _isLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      await _api.register(data);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> changePassword(String oldPw, String newPw) async {

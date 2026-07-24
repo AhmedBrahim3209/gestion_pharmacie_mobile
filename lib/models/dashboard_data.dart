@@ -29,6 +29,19 @@ class DashboardData {
   }
 
   factory DashboardData.fromJson(Map<String, dynamic> json) {
+    List<double> parseCaParJour(dynamic data) {
+      if (data is List) {
+        if (data.every((e) => e is num)) {
+          return data.map((e) => (e as num).toDouble()).toList();
+        }
+        return data.map((e) {
+          if (e is Map) return _toDouble(e['ca']) ?? 0.0;
+          return _toDouble(e) ?? 0.0;
+        }).toList();
+      }
+      return [];
+    }
+
     return DashboardData(
       stockFaible: json['stock_faible'] ?? 0,
       enRupture: json['stock_rupture'] ?? 0,
@@ -38,7 +51,7 @@ class DashboardData {
       caMois: _toDouble(json['ca_mois']) ?? 0,
       totalVentesMois: json['nb_ventes_mois'] ?? 0,
       medicamentsExpires: json['medicaments_expires'] ?? 0,
-      caParJour: (json['ca_par_jour'] as List?)?.map((e) => _toDouble(e) ?? 0.0).toList() ?? [],
+      caParJour: parseCaParJour(json['ventes_semaine'] ?? json['ca_par_jour']),
     );
   }
 }

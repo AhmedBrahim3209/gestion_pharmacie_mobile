@@ -85,11 +85,13 @@ class PharmacieProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updatePlatformSettings(Map<String, dynamic> data) async {
+  Future<bool> updatePlatformSettings(Map<String, dynamic> data, {bool refresh = true}) async {
     try {
       final result = await _api.updatePlatformSettings(data);
-      _platformSettings = PlatformSettings.fromJson(result);
-      notifyListeners();
+      if (refresh) {
+        _platformSettings = PlatformSettings.fromJson(result);
+        notifyListeners();
+      }
       return true;
     } catch (e) {
       _error = e.toString();
@@ -97,11 +99,19 @@ class PharmacieProvider extends ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>?> getAbonnementConfig() async {
+    try {
+      return await _api.getAbonnementConfig();
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<bool> uploadLogo(File file) async {
     _isLoading = true;
     notifyListeners();
     try {
-      await _api.uploadFile('/pharmacies/upload-logo/', file);
+      await _api.patchUpload('/pharmacies/mes-parametres/', file, fieldName: 'logo');
       await loadMySettings();
       _isLoading = false;
       notifyListeners();

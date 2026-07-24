@@ -82,6 +82,7 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                           itemCount: filtered.length,
                           itemBuilder: (context, index) {
                       final client = filtered[index];
+                      final isFidele = client.isFidele;
                       return Card(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -93,17 +94,30 @@ class _ClientsListScreenState extends State<ClientsListScreen> {
                             child: Row(
                               children: [
                                 CircleAvatar(
-                                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                                  child: Text(client.fullName.isNotEmpty ? client.fullName[0].toUpperCase() : '?', style: const TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                                  backgroundColor: (isFidele ? AppTheme.warningColor : AppTheme.primaryColor).withValues(alpha: 0.1),
+                                  child: Text(client.fullName.isNotEmpty ? client.fullName[0].toUpperCase() : '?', style: TextStyle(color: isFidele ? AppTheme.warningColor : AppTheme.primaryColor, fontWeight: FontWeight.bold)),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(client.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary)),
+                                      Row(
+                                        children: [
+                                          Expanded(child: Text(client.fullName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textPrimary))),
+                                          if (isFidele)
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(color: AppTheme.warningColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                                              child: const Text('Fidèle', style: TextStyle(fontSize: 10, color: AppTheme.warningColor, fontWeight: FontWeight.w600)),
+                                            ),
+                                        ],
+                                      ),
                                       const SizedBox(height: 4),
-                                      Text(client.telephone ?? client.email ?? '', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                                      Text(
+                                        '${client.telephone ?? client.email ?? ''}  •  ${client.nombreAchats} achat(s)',
+                                        style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                      ),
                                     ],
                                   ),
                                 ),

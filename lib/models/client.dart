@@ -7,6 +7,8 @@ class Client {
   final String? adresse;
   final String? sexe;
   final DateTime? dateNaissance;
+  final String? statut;
+  final int nombreAchats;
 
   Client({
     required this.id,
@@ -17,6 +19,8 @@ class Client {
     this.adresse,
     this.sexe,
     this.dateNaissance,
+    this.statut,
+    this.nombreAchats = 0,
   });
 
   factory Client.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class Client {
       adresse: json['adresse'],
       sexe: json['sexe'],
       dateNaissance: json['date_naissance'] != null ? DateTime.tryParse(json['date_naissance']) : null,
+      statut: json['statut'],
+      nombreAchats: json['nombre_achats'] ?? 0,
     );
   }
 
@@ -43,4 +49,6 @@ class Client {
   };
 
   String get fullName => '${prenom ?? ''} $nom'.trim();
+  bool get isFidele => statut == 'fidele';
+  bool get isActif => statut == 'actif';
 }

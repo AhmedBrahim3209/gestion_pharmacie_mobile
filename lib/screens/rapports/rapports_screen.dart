@@ -73,7 +73,18 @@ class _RapportsScreenState extends State<RapportsScreen> {
       appBar: AppBar(
         title: const Text('Rapports'),
         actions: [
-          IconButton(icon: const Icon(Icons.file_download), tooltip: 'Exporter CSV', onPressed: _exporterCSV),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.file_download),
+            tooltip: 'Exporter',
+            onSelected: (v) {
+              if (v == 'csv') _exporterCSV();
+              if (v == 'xlsx') _exporterXLSX();
+            },
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'csv', child: Row(children: [Icon(Icons.description, size: 18), SizedBox(width: 8), Text('CSV')])),
+              const PopupMenuItem(value: 'xlsx', child: Row(children: [Icon(Icons.table_chart, size: 18), SizedBox(width: 8), Text('XLSX')])),
+            ],
+          ),
         ],
       ),
       body: rapport.isLoading
@@ -200,6 +211,41 @@ class _RapportsScreenState extends State<RapportsScreen> {
                       ),
                     )),
                   const SizedBox(height: 24),
+                  _sectionDivider('Répartition géographique'),
+                  FutureBuilder<List<Map<String, dynamic>>>(
+                    future: context.read<RapportProvider>().getRepartitionGeographique(),
+                    builder: (context, snap) {
+                      if (!snap.hasData || snap.data!.isEmpty) return const SizedBox.shrink();
+                      return Card(
+                        margin: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: snap.data!.take(5).map((item) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Row(
+                                children: [
+                                  Expanded(flex: 3, child: Text(item['ville'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500))),
+                                  Expanded(
+                                    flex: 2,
+                                    child: LinearProgressIndicator(
+                                      value: (item['nombre'] as num).toDouble() / (snap.data!.fold<double>(0, (s, e) => s + (e['nombre'] as num).toDouble())).toDouble(),
+                                      backgroundColor: Colors.grey.shade200,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text('${item['nombre']}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            )).toList(),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
                   _sectionDivider('Alertes stock'),
                   Card(
                     margin: EdgeInsets.zero,
@@ -221,6 +267,52 @@ class _RapportsScreenState extends State<RapportsScreen> {
               ),
             ),
     );
+  }
+
+  Future<void> _exporterXLSX() async {
+    final rapport = context.read<RapportProvider>();
+    final data = rapport.ventesData;
+    if (data == null) return;
+    final totalVentes = data['total_ventes'] ?? 0;
+    final caTotal = (data['ca_total'] as num?)?.toDouble() ?? 0;
+    final nbTransactions = data['nb_transactions'] ?? 0;
+    final panierMoyen = (data['panier_moyen'] as num?)?.toDouble() ?? 0;
+    final bestSellers = (data['meilleures_ventes'] as List<dynamic>?) ?? [];
+    final periodLabel = _period == 'custom' && _dateDebut != null && _dateFin != null
+        ? 'Du ${DateFormat('dd/MM/yyyy').format(_dateDebut!)} au ${DateFormat('dd/MM/yyyy').format(_dateFin!)}'
+        : _period;
+
+    final buf = StringBuffer();
+    buf.writeln('<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rapport</x:Name></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>');
+    buf.writeln('<table border="1">');
+    buf.writeln('<tr><th colspan="2" style="font-size:16px;background:#2563EB;color:white;">Rapport de ventes - $periodLabel</th></tr>');
+    buf.writeln('<tr><th>Indicateur</th><th>Valeur</th></tr>');
+    buf.writeln('<tr><td>Total ventes</td><td>$totalVentes</td></tr>');
+    buf.writeln('<tr><td>CA total</td><td>$caTotal ${AppCurrency.symbol}</td></tr>');
+    buf.writeln('<tr><td>Transactions</td><td>$nbTransactions</td></tr>');
+    buf.writeln('<tr><td>Panier moyen</td><td>${panierMoyen.toStringAsFixed(0)} ${AppCurrency.symbol}</td></tr>');
+    if (bestSellers.isNotEmpty) {
+      buf.writeln('<tr><th colspan="2" style="background:#e5e7eb;">Meilleures ventes</th></tr>');
+      buf.writeln('<tr><th>Médicament</th><th>Quantité vendue</th></tr>');
+      for (final item in bestSellers) {
+        final nom = item['medicament__nom'] ?? item['medicament_nom'] ?? 'N/A';
+        final qte = item['quantite_totale'] ?? item['quantite'] ?? 0;
+        buf.writeln('<tr><td>$nom</td><td>$qte</td></tr>');
+      }
+    }
+    buf.writeln('</table></body></html>');
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final fileName = 'rapport_ventes_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xls';
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsString(buf.toString());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Exporté: $fileName')));
+        await OpenFile.open(file.path);
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur export: $e'), backgroundColor: AppTheme.errorColor));
+    }
   }
 
   Future<void> _exporterCSV() async {

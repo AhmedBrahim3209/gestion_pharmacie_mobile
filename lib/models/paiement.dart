@@ -1,6 +1,7 @@
 class Paiement {
   final int id;
   final String? pharmacie;
+  final String? pharmacieNom;
   final String reference;
   final double montant;
   final String? date;
@@ -9,6 +10,7 @@ class Paiement {
   Paiement({
     required this.id,
     this.pharmacie,
+    this.pharmacieNom,
     required this.reference,
     required this.montant,
     this.date,
@@ -26,6 +28,7 @@ class Paiement {
     return Paiement(
       id: json['id'],
       pharmacie: json['pharmacie'],
+      pharmacieNom: json['pharmacie_nom'] ?? json['pharmacie__nom'],
       reference: json['reference'] ?? '',
       montant: _toDouble(json['montant']) ?? 0,
       date: json['date'],

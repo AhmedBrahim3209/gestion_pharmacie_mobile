@@ -40,35 +40,50 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                        child: Text(widget.client.fullName[0].toUpperCase(), style: TextStyle(fontSize: 24, color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(widget.client.fullName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
-                          if (widget.client.email != null) Text(widget.client.email!, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const Divider(height: 24),
-                  _infoRow(Icons.phone, widget.client.telephone ?? 'N/A'),
-                  const SizedBox(height: 8),
-                  _infoRow(Icons.email, widget.client.email ?? 'N/A'),
-                  const SizedBox(height: 8),
-                  _infoRow(Icons.home, widget.client.adresse ?? 'N/A'),
-                  const SizedBox(height: 8),
-                  if (widget.client.sexe != null) _infoRow(Icons.person, widget.client.sexe!),
-                  if (widget.client.dateNaissance != null) ...[
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                          child: Text(widget.client.fullName[0].toUpperCase(), style: TextStyle(fontSize: 24, color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 16),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(widget.client.fullName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textPrimary)),
+                            if (widget.client.email != null) Text(widget.client.email!, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                          ],
+                        ),
+                        const Spacer(),
+                        if (widget.client.isFidele)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: AppTheme.warningColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                            child: const Text('Fidèle', style: TextStyle(fontSize: 12, color: AppTheme.warningColor, fontWeight: FontWeight.w600)),
+                          )
+                        else if (widget.client.isActif)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(color: AppTheme.successColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                            child: const Text('Actif', style: TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.w600)),
+                          ),
+                      ],
+                    ),
+                    const Divider(height: 24),
+                    _infoRow(Icons.phone, widget.client.telephone ?? 'N/A'),
                     const SizedBox(height: 8),
-                    _infoRow(Icons.cake, '${widget.client.dateNaissance!.day}/${widget.client.dateNaissance!.month}/${widget.client.dateNaissance!.year}'),
-                  ],
+                    _infoRow(Icons.email, widget.client.email ?? 'N/A'),
+                    const SizedBox(height: 8),
+                    _infoRow(Icons.home, widget.client.adresse ?? 'N/A'),
+                    const SizedBox(height: 8),
+                    if (widget.client.sexe != null) _infoRow(Icons.person, widget.client.sexe!),
+                    if (widget.client.dateNaissance != null) ...[
+                      const SizedBox(height: 8),
+                      _infoRow(Icons.cake, '${widget.client.dateNaissance!.day}/${widget.client.dateNaissance!.month}/${widget.client.dateNaissance!.year}'),
+                    ],
+                    const SizedBox(height: 8),
+                    _infoRow(Icons.shopping_bag, '${widget.client.nombreAchats} achat(s)'),
                 ],
               ),
             ),

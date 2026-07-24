@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/app_theme.dart';
@@ -18,6 +19,7 @@ class VentesListScreen extends StatefulWidget {
 class _VentesListScreenState extends State<VentesListScreen> {
   DateTime? _dateDebut;
   DateTime? _dateFin;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -25,6 +27,15 @@ class _VentesListScreenState extends State<VentesListScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<VenteProvider>().loadVentes();
     });
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) context.read<VenteProvider>().loadVentes();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _filtrerDates() async {
@@ -50,7 +61,24 @@ class _VentesListScreenState extends State<VentesListScreen> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(icon: const Icon(Icons.menu), onPressed: widget.onMenuTap),
-        title: const Text('Historique des ventes'),
+        title: Row(
+          children: [
+            const Text('Historique des ventes'),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(color: AppTheme.primaryColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.sync, size: 10, color: AppTheme.primaryColor),
+                  SizedBox(width: 2),
+                  Text('10s', style: TextStyle(fontSize: 9, color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: Column(
         children: [

@@ -31,7 +31,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
   String _modePaiement = 'Especes';
   String _montantRecu = '';
 
-  static const _modesPaiement = ['Especes', 'Carte', 'Cheque', 'Virement', 'Mobile Money'];
+  static const _modesPaiement = ['Especes', 'Carte', 'Cheque', 'Virement', 'Mobile'];
 
   @override
   void initState() {
@@ -49,7 +49,7 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
     super.dispose();
   }
 
-  double get _totalHt => _lignes.fold(0, (sum, l) => sum + (l.medicament.prixVente * l.quantite));
+  double get _totalHt => _lignes.fold<double>(0.0, (sum, l) => sum + (l.medicament.prixVente * l.quantite));
   double get _totalTva => _totalHt * (_tauxTva / 100);
   double get _totalTtc => _totalHt + _totalTva;
   double get _net => _totalTtc - _remise;
@@ -59,13 +59,18 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
   }
   int get _nbArticles => _lignes.fold(0, (sum, l) => sum + l.quantite);
 
+  DateTime? _lastTap;
   void _ajouterLigne(Medicament med) {
+    final now = DateTime.now();
+    final isDoubleTap = _lastTap != null && now.difference(_lastTap!).inMilliseconds < 400;
+    _lastTap = now;
+    final qte = isDoubleTap ? 2 : 1;
     setState(() {
       final existing = _lignes.where((l) => l.medicament.id == med.id).firstOrNull;
       if (existing != null) {
-        existing.quantite += 1;
+        existing.quantite += qte;
       } else {
-        _lignes.add(_LigneVente(medicament: med, quantite: 1));
+        _lignes.add(_LigneVente(medicament: med, quantite: qte));
       }
     });
   }
@@ -123,29 +128,6 @@ class _NouvelleVenteScreenState extends State<NouvelleVenteScreen> {
         });
       } catch (_) {}
     }
-
-    // Decrement stock for each item in the sale
-    try {
-      final stockList = await api.getStock();
-      final stockByMedicament = <int, int>{};
-      for (final s in stockList) {
-        if (s is Map && s['medicament'] != null && s['id'] != null) {
-          stockByMedicament[s['medicament']] = s['id'];
-        }
-      }
-      for (final l in _lignes) {
-        final stockId = stockByMedicament[l.medicament.id];
-        if (stockId != null) {
-          try {
-            await api.adjustStock(stockId, {
-              'type_mouvement': 'sortie',
-              'quantite': l.quantite,
-              'motif': 'Vente #${vente.numero}',
-            });
-          } catch (_) {}
-        }
-      }
-    } catch (_) {}
 
     try { if (mounted) context.read<MedicamentProvider>().loadMedicaments(); } catch (_) {}
     try { if (mounted) context.read<DashboardProvider>().loadDashboard(); } catch (_) {}

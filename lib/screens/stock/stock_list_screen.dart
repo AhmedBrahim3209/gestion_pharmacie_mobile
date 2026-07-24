@@ -61,7 +61,31 @@ class _StockListScreenState extends State<StockListScreen> {
                     itemCount: provider.stockItems.length,
                     itemBuilder: (context, index) {
                       final item = provider.stockItems[index];
-                      final isLow = item.quantite <= item.seuilMin;
+                      final bool isRupture = item.quantite <= 0;
+                      final bool isACommander = item.quantite > 0 && item.quantite <= item.seuilMin * 0.5;
+                      final bool isAttention = item.quantite > 0 && item.quantite <= item.seuilMin && !isACommander;
+
+                      String stockLabel;
+                      Color stockColor;
+                      IconData stockIcon;
+                      if (isRupture) {
+                        stockLabel = 'Rupture';
+                        stockColor = AppTheme.errorColor;
+                        stockIcon = Icons.error_outline;
+                      } else if (isACommander) {
+                        stockLabel = 'À commander';
+                        stockColor = Colors.orange;
+                        stockIcon = Icons.shopping_cart_outlined;
+                      } else if (isAttention) {
+                        stockLabel = 'Attention';
+                        stockColor = AppTheme.warningColor;
+                        stockIcon = Icons.warning_amber_rounded;
+                      } else {
+                        stockLabel = 'Bon';
+                        stockColor = AppTheme.successColor;
+                        stockIcon = Icons.check_circle_outline;
+                      }
+
                       return Card(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -75,10 +99,10 @@ class _StockListScreenState extends State<StockListScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: isLow ? AppTheme.errorColor.withValues(alpha: 0.1) : AppTheme.successColor.withValues(alpha: 0.1),
+                                    color: stockColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(10),
                                   ),
-                                  child: Icon(Icons.inventory_2, color: isLow ? AppTheme.errorColor : AppTheme.successColor, size: 24),
+                                  child: Icon(stockIcon, color: stockColor, size: 24),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
@@ -92,12 +116,12 @@ class _StockListScreenState extends State<StockListScreen> {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                    color: stockColor.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(Icons.tune, color: AppTheme.primaryColor, size: 20),
+                                  child: Text(stockLabel, style: TextStyle(fontSize: 11, color: stockColor, fontWeight: FontWeight.w600)),
                                 ),
                               ],
                             ),

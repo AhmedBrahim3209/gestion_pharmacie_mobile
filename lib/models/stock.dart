@@ -69,7 +69,7 @@ class MouvementStock {
       quantiteAvant: _toDouble(json['quantite_avant']),
       quantiteApres: _toDouble(json['quantite_apres']),
       motif: json['motif'],
-      date: json['date'],
+      date: json['created_at'],
       utilisateurNom: json['utilisateur_nom'],
     );
   }

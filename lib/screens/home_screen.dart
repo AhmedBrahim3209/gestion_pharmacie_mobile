@@ -21,6 +21,8 @@ import 'profile/profile_screen.dart';
 import 'paiements/paiements_list_screen.dart';
 import 'utilisateurs/utilisateurs_list_screen.dart';
 import 'achats/fournisseurs_screen.dart';
+import 'abonnements/mon_abonnement_screen.dart';
+import 'captures/captures_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -198,6 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Divider(height: 20, color: AppTheme.sidebarBorder),
             _sectionHeader('Outils'),
             _drawerItem(Icons.bar_chart, 'Rapports', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RapportsScreen()))),
+            _drawerItem(Icons.subscriptions, 'Mon abonnement', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MonAbonnementScreen()))),
             _drawerItem(Icons.smart_toy, 'Assistant IA', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()))),
             _drawerItem(Icons.notifications, 'Notifications', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
             _drawerItem(Icons.settings, 'Paramètres', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ParametresScreen()))),
@@ -209,6 +212,8 @@ class _HomeScreenState extends State<HomeScreen> {
             _drawerItem(Icons.people, 'Utilisateurs', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const UtilisateursListScreen()))),
             _drawerItem(Icons.subscriptions, 'Abonnements', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AbonnementsListScreen()))),
             _drawerItem(Icons.payments, 'Paiements', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PaiementsListScreen()))),
+            _drawerItem(Icons.image, 'Captures', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const CapturesScreen()))),
+            _drawerItem(Icons.subscriptions, 'Mon abonnement', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MonAbonnementScreen()))),
             _drawerItem(Icons.bar_chart, 'Rapports', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RapportsScreen()))),
             _drawerItem(Icons.notifications, 'Notifications', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen()))),
             _drawerItem(Icons.smart_toy, 'Assistant IA', () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatScreen()))),

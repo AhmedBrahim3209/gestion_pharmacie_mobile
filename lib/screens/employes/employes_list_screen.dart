@@ -64,7 +64,9 @@ class _EmployesListScreenState extends State<EmployesListScreen> {
                 const SizedBox(height: 8),
                 TextField(controller: _emailCtrl, decoration: InputDecoration(labelText: 'Email', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
                 const SizedBox(height: 8),
-                TextField(controller: _telephoneCtrl, decoration: InputDecoration(labelText: 'Téléphone', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100)),
+                TextField(controller: _telephoneCtrl, decoration: InputDecoration(labelText: 'Téléphone (8 chiffres)', border: OutlineInputBorder(), filled: true, fillColor: Colors.grey.shade100, hintText: '45123456'), keyboardType: TextInputType.phone, onChanged: (v) {
+                  if (v.replaceAll(RegExp(r'\D'), '').length > 8) _telephoneCtrl.text = v.substring(0, 8);
+                }),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   value: _role,

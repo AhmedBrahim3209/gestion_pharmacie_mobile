@@ -53,11 +53,11 @@ class ApiService {
 
   bool get isAuthenticated => _accessToken != null;
 
-  Future<Map<String, dynamic>> login(String username, String password) async {
+  Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
       Uri.parse('${ApiConfig.baseUrl}/auth/login/'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
+      body: jsonEncode({'email': email, 'password': password}),
     );
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
@@ -154,10 +154,23 @@ class ApiService {
     headers: _headers,
   ));
 
-  Future<dynamic> uploadFile(String path, File file, {Map<String, String>? fields}) async {
+  Future<dynamic> uploadFile(String path, File file, {Map<String, String>? fields, String fieldName = 'file'}) async {
     final request = http.MultipartRequest('POST', Uri.parse('${ApiConfig.baseUrl}$path'));
     if (_accessToken != null) request.headers['Authorization'] = 'Bearer $_accessToken';
-    request.files.add(await http.MultipartFile.fromPath('file', file.path));
+    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+    if (fields != null) request.fields.addAll(fields);
+    final streamed = await request.send();
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return jsonDecode(response.body);
+    }
+    throw HttpException('Upload failed: ${response.statusCode}');
+  }
+
+  Future<dynamic> patchUpload(String path, File file, {Map<String, String>? fields, String fieldName = 'file'}) async {
+    final request = http.MultipartRequest('PATCH', Uri.parse('${ApiConfig.baseUrl}$path'));
+    if (_accessToken != null) request.headers['Authorization'] = 'Bearer $_accessToken';
+    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
     if (fields != null) request.fields.addAll(fields);
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
@@ -168,6 +181,7 @@ class ApiService {
   }
 
   // Auth
+  Future<Map<String, dynamic>> register(Map<String, dynamic> data) async => (await post('/auth/register/', data: data)) as Map<String, dynamic>;
   Future<Map<String, dynamic>> getMe() async => (await get('/auth/me/')) as Map<String, dynamic>;
   Future<Map<String, dynamic>> updateMe(Map<String, dynamic> data) async => (await patch('/auth/me/', data: data)) as Map<String, dynamic>;
   Future<dynamic> changePassword(Map<String, dynamic> data) => post('/auth/change-password/', data: data);
@@ -223,6 +237,8 @@ class ApiService {
   // Fournisseurs
   Future<List<dynamic>> getFournisseurs() async => (await _get('/achats/fournisseurs/')) as List<dynamic>;
   Future<Map<String, dynamic>> createFournisseur(Map<String, dynamic> data) async => (await post('/achats/fournisseurs/', data: data)) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> updateFournisseur(int id, Map<String, dynamic> data) async => (await patch('/achats/fournisseurs/$id/', data: data)) as Map<String, dynamic>;
+  Future<void> deleteFournisseur(int id) => delete('/achats/fournisseurs/$id/');
 
   // Clients
   Future<List<dynamic>> getClients() async => (await _get('/clients/')) as List<dynamic>;
@@ -234,6 +250,14 @@ class ApiService {
 
   // Notifications
   Future<List<dynamic>> getNotifications() async => (await _get('/notifications/')) as List<dynamic>;
+  Future<Map<String, dynamic>> getNotificationsPaginated({int page = 1, int pageSize = 10, String? status, String? type, String? search}) async {
+    var path = '/notifications/?page=$page&page_size=$pageSize';
+    if (status != null && status != 'toutes') path += '&status=$status';
+    if (type != null && type != 'toutes') path += '&type=$type';
+    if (search != null && search.isNotEmpty) path += '&search=$search';
+    return (await get(path)) as Map<String, dynamic>;
+  }
+  Future<Map<String, dynamic>> getNotificationStats() async => (await get('/notifications/statistiques/')) as Map<String, dynamic>;
   Future<int> getUnreadCount() async {
     final data = await _get('/notifications/non-lues/');
     if (data is Map) return data['count'] ?? 0;
@@ -241,6 +265,7 @@ class ApiService {
   }
   Future<void> markAsRead(int id) => post('/notifications/$id/marquer-lue/');
   Future<void> markAllRead() => post('/notifications/tout-lire/');
+  Future<void> deleteNotification(int id) => post('/notifications/$id/supprimer/');
 
   // Prescriptions (via clients app)
   Future<List<dynamic>> getPrescriptions() async => (await _get('/clients/prescriptions/')) as List<dynamic>;
@@ -261,10 +286,22 @@ class ApiService {
   Future<Map<String, dynamic>> updateAbonnement(int id, Map<String, dynamic> data) async => (await patch('/abonnements/$id/', data: data)) as Map<String, dynamic>;
   Future<void> suspendreAbonnement(int id) => post('/abonnements/$id/suspendre/');
   Future<void> activerAbonnement(int id) => post('/abonnements/$id/activer/');
+  Future<Map<String, dynamic>> renouvelerAbonnement(int id, Map<String, dynamic> data) async => (await post('/abonnements/$id/renouveler/', data: data)) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getAbonnementStats() async => (await get('/abonnements/statistiques/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getAbonnementPrix() async => (await get('/abonnements/prix/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getAbonnementConfig() async => (await get('/abonnements/config/')) as Map<String, dynamic>;
+  Future<List<dynamic>> getAbonnementCaptures() async => (await _get('/abonnements/captures/')) as List<dynamic>;
+  Future<Map<String, dynamic>> getMonAbonnement() async => (await get('/abonnements/mon-abonnement/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> payerMonAbonnement(Map<String, dynamic> data) async => (await post('/abonnements/mon-abonnement/', data: data)) as Map<String, dynamic>;
 
   // Paiements (platform-wide)
   Future<List<dynamic>> getPaiements() async => (await _get('/paiements/')) as List<dynamic>;
   Future<Map<String, dynamic>> createPaiement(Map<String, dynamic> data) async => (await post('/paiements/', data: data)) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> updatePaiement(int id, Map<String, dynamic> data) async => (await patch('/paiements/$id/', data: data)) as Map<String, dynamic>;
+  Future<void> deletePaiement(int id) => delete('/paiements/$id/');
+  Future<Map<String, dynamic>> confirmerPaiement(int id) async => (await post('/paiements/$id/confirmer/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> annulerPaiement(int id) async => (await post('/paiements/$id/annuler/')) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> getPaiementStats() async => (await get('/paiements/statistiques/')) as Map<String, dynamic>;
 
   // Pharmacies
   Future<List<dynamic>> getPharmacies() async => (await _get('/pharmacies/')) as List<dynamic>;
@@ -295,6 +332,12 @@ class ApiService {
   Future<void> deleteUser(int id) => delete('/auth/utilisateurs/$id/');
   Future<void> toggleUserActif(int id) => post('/auth/utilisateurs/$id/toggle-actif/');
 
+  // ConfigurationAbonnement (super admin)
+  Future<List<dynamic>> getConfigurationsAbonnement() async => (await _get('/pharmacies/configurations-abonnement/')) as List<dynamic>;
+  Future<Map<String, dynamic>> createConfigurationAbonnement(Map<String, dynamic> data) async => (await post('/pharmacies/configurations-abonnement/', data: data)) as Map<String, dynamic>;
+  Future<Map<String, dynamic>> updateConfigurationAbonnement(int id, Map<String, dynamic> data) async => (await patch('/pharmacies/configurations-abonnement/$id/', data: data)) as Map<String, dynamic>;
+  Future<void> deleteConfigurationAbonnement(int id) => delete('/pharmacies/configurations-abonnement/$id/');
+
   // Client purchase history
   Future<List<dynamic>> getClientPurchases(int clientId) async => (await _get('/clients/$clientId/achats/')) as List<dynamic>;
 
@@ -312,6 +355,7 @@ class ApiService {
     }
     return (await get(path)) as Map<String, dynamic>;
   }
+  Future<Map<String, dynamic>> getRapportStock() async => (await get('/rapports/stock/')) as Map<String, dynamic>;
   Future<List<dynamic>> getEvenementsSuperAdmin() async => (await _get('/rapports/evenements/')) as List<dynamic>;
 
   // Vente stats with params

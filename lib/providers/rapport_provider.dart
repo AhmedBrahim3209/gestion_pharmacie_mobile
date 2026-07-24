@@ -70,4 +70,19 @@ class RapportProvider extends ChangeNotifier {
       _error = e.toString();
     }
   }
+
+  Future<List<Map<String, dynamic>>> getRepartitionGeographique() async {
+    try {
+      final pharmacies = await _api.getPharmacies();
+      final Map<String, int> repartition = {};
+      for (final p in pharmacies) {
+        final ville = (p['adresse'] as String?)?.split(',').last.trim() ?? 'Non renseignée';
+        repartition[ville] = (repartition[ville] ?? 0) + 1;
+      }
+      final sorted = repartition.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      return sorted.map((e) => {'ville': e.key, 'nombre': e.value}).toList();
+    } catch (e) {
+      return [];
+    }
+  }
 }

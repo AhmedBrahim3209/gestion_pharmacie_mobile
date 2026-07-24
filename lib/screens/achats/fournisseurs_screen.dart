@@ -59,7 +59,9 @@ class _FournisseursScreenState extends State<FournisseursScreen> {
             const SizedBox(height: 8),
             TextField(controller: _contactCtrl, decoration: const InputDecoration(labelText: 'Contact', border: OutlineInputBorder())),
             const SizedBox(height: 8),
-            TextField(controller: _telCtrl, decoration: const InputDecoration(labelText: 'Téléphone', border: OutlineInputBorder())),
+            TextField(controller: _telCtrl, decoration: const InputDecoration(labelText: 'Téléphone (8 chiffres)', border: OutlineInputBorder(), hintText: '45123456'), keyboardType: TextInputType.phone, onChanged: (v) {
+              if (v.length > 8) _telCtrl.text = v.substring(0, 8);
+            }),
             const SizedBox(height: 8),
             TextField(controller: _emailCtrl, decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder())),
             const SizedBox(height: 8),
@@ -71,10 +73,20 @@ class _FournisseursScreenState extends State<FournisseursScreen> {
         TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
         TextButton(onPressed: () async {
           if (_nomCtrl.text.isNotEmpty) {
+            if (_telCtrl.text.isNotEmpty && _telCtrl.text.replaceAll(RegExp(r'\D'), '').length != 8) {
+              ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Le téléphone doit faire 8 chiffres'), backgroundColor: AppTheme.errorColor));
+              return;
+            }
             final achatProv = context.read<AchatProvider>();
             bool ok;
             if (_editing != null) {
-              ok = await achatProv.updateFournisseur(_editing!.id, _editing!.toJson());
+              ok = await achatProv.updateFournisseur(_editing!.id, {
+                'nom': _nomCtrl.text.trim(),
+                'contact': _contactCtrl.text.trim(),
+                'telephone': _telCtrl.text.trim(),
+                'email': _emailCtrl.text.trim(),
+                'adresse': _adresseCtrl.text.trim(),
+              });
             } else {
               ok = await achatProv.createFournisseur({
                 'nom': _nomCtrl.text.trim(),
@@ -97,6 +109,21 @@ class _FournisseursScreenState extends State<FournisseursScreen> {
             }
           }
         }, child: Text(f != null ? 'Modifier' : 'Ajouter')),
+      ],
+    ));
+  }
+
+  void _confirmDelete(int id) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Confirmer'),
+      content: const Text('Supprimer ce fournisseur ?'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Annuler')),
+        TextButton(onPressed: () {
+          Navigator.pop(ctx);
+          context.read<AchatProvider>().deleteFournisseur(id);
+        }, child: const Text('Supprimer', style: TextStyle(color: AppTheme.errorColor))),
       ],
     ));
   }
@@ -126,6 +153,7 @@ class _FournisseursScreenState extends State<FournisseursScreen> {
                   if (!f.estActif) const Icon(Icons.block, color: Colors.red, size: 18),
                   const SizedBox(width: 4),
                   IconButton(icon: const Icon(Icons.edit_outlined, size: 20), onPressed: () => _showForm(f: f)),
+                  IconButton(icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.errorColor), onPressed: () => _confirmDelete(f.id)),
                 ],
               ),
             ),

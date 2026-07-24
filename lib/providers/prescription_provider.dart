@@ -36,6 +36,17 @@ class PrescriptionProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updatePrescription(int id, Map<String, dynamic> data) async {
+    try {
+      await _api.updatePrescription(id, data);
+      await loadPrescriptions();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      return false;
+    }
+  }
+
   Future<bool> deletePrescription(int id) async {
     try {
       await _api.deletePrescription(id);

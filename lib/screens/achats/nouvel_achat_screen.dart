@@ -26,7 +26,7 @@ class _NouvelAchatScreenState extends State<NouvelAchatScreen> {
     });
   }
 
-  double get _total => _lignes.fold(0, (sum, l) => sum + (l.prixUnitaire * l.quantite));
+  double get _total => _lignes.fold<double>(0.0, (sum, l) => sum + (l.prixUnitaire * l.quantite));
 
   void _ajouterLigne(Medicament med) {
     setState(() => _lignes.add(_LigneAchat(medicament: med, quantite: 1, prixUnitaire: med.prixAchat ?? 0)));
